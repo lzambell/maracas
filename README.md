@@ -5,7 +5,8 @@ To run maracas, you'll need `python`, `numpy`, `numba`, `pytables` and `matplotl
 
 ## Configure your simulation
 Use, or update, the input json files given in the `input/` repository.</br>
-All units are in meters, volt and second.
+All units are in meters, volt and second.</br>
+Drift is along *positive x axis*.
 
 ## Run your simulation
 The command to run maracas is:</br>
