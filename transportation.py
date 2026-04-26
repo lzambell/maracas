@@ -1,5 +1,3 @@
-#import plotting as plot
-
 from numba import njit, prange
 import numpy as np
 
@@ -157,7 +155,7 @@ def transport_charge(param):
     """ safety fix, no negative ion concentration """
     param.rho = np.maximum(param.rho, 0)
 
-    #return div
+
 
 def mean_velocities_at_faces(axis, dim, attraction, flow):
     """

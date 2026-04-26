@@ -18,9 +18,11 @@ class flow:
     
 
         for flow_type, param in self.parameters.items():
-            print(flow_type, param)
+            
+
             if("constant" in flow_type):
                 self.make_contant_flow(param)
+                
             elif("vortex" in flow_type):
                 self.make_vortex_flow(param)                
             else:

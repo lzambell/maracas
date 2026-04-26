@@ -1,4 +1,3 @@
-
 import numpy as np
 from numba import njit, prange
 
@@ -149,8 +148,8 @@ def poisson_solve(param):
     dx  = param.geo.dx
     eps = param.epsilon
 
-    # Build rho on node faces (numba)
-    rho_node = np.zeros_like(param.Ex) # == (Nx+1, Ny+1, Nz+1) with correct fixes for 1D or 2D cases
+    # Build rho on node faces 
+    rho_node = np.zeros_like(param.Ex) 
     build_rho_node(rho_node, param.rho, dim)
 
     # Compute weights on nodes (same shape as rho_node)
@@ -180,12 +179,13 @@ def poisson_solve(param):
     phi_old = param.phi
     phi_new = phi_old.copy()
 
-    #set Dirichlet BC first !
+    #(re) set Dirichlet BC on previous phi (safety precaution)
     param.set_boundary_conditions_with_ghost(phi_old)
 
-    
+
     jacobi_step(phi_new, phi_old, rho_node, dx, eps, dim)
-    
+
+    #set Dirichlet BC on new phi 
     param.set_boundary_conditions_with_ghost(phi_new)
 
     # convergence metric

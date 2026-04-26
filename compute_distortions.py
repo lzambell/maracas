@@ -40,7 +40,7 @@ def mobility(E):
     # temperature correction
     mu = mu * (T / T0) ** (-1.5)
 
-    return mu              # cm^2/(V·s)
+    return mu   # cm^2/(V·s)
 
 
 
@@ -149,7 +149,7 @@ def drift_path_2d(x0, y0,
         x_new = x - ds * ux
         y_new = y - ds * uy
 
-        #if(step%10 == 0):
+
         traj[step,0] = x_new
         traj[step,1] = y_new
 
@@ -163,7 +163,7 @@ def drift_path_2d(x0, y0,
     reco_x = xmin + drift_time * (mobility(E0) * E0) * 1e-2 
     reco_y = y
 
-    #return traj[:step+1], np.array([x0, y0, reco_x, reco_y, drift_time, drift_len])
+
     return traj[:step+1], np.array([xs-reco_x, ys-reco_y, drift_time, drift_len])
 
 
@@ -196,10 +196,12 @@ def compute_regular_distortions(param):
         param.delta_x[pos[0], pos[1], 0] = res[0]
         param.delta_y[pos[0], pos[1], 0] = res[1]
         #param.delta_z[pos[0], pos[1], 0] = res[0]
-        #if(i%500==0):
-        #    trajectories.append(traj)
+
+
         if(pos[0]==param.geo.Nx_path-1 or pos[1] == 0 or pos[1]==param.geo.Ny_path-1):
             trajectories.append(traj)
+
+
         if(i%10000==0):
             print(i, 'at',pos)
             xs = param.geo.xmin + pos[0]*param.geo.dx_path
@@ -209,8 +211,8 @@ def compute_regular_distortions(param):
             print('drift time ', res[2])
             print('drift length', res[3])
             print('nstep: ', len(traj))
-        #print(pos, '-->', res)
+
         i+=1
-    print('distortions took ', time.time()-t0)
+    print(f'It tool {time.time()-t0:.3f} s to compute the distortions')
 
     return trajectories[::10]

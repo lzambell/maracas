@@ -1,7 +1,4 @@
-import numpy as np
 from tables import *
-
-#import parameters as pm
 
 class parameters(IsDescription):
     dim = UInt8Col()

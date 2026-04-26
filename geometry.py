@@ -51,25 +51,25 @@ class geometry:
             self.Nz = int(np.floor(self.Lz / self.dz + 1e-9))
             assert self.dx == self.dz, ("binning should be the same in x, y and z (3D case)")
             
-        print('---- Geometry ----')
-        print('In ',self.dim,' dimensions')
+        print('\n---- General Geometry ----')
+        print('Simulation in ',self.dim,' dimensions')
         print('Lengthes: Lx:', self.Lx, 'm, Ly:',self.Ly, 'm, Lz:',self.Lz,'m')
-        print('Nbins: ', 'Nx:', self.Nx, 'Ny:',self.Ny, 'Nz',self.Nz)
-        print('along x', self.xmin, 'm to', self.xmax,'m')
-        print('along y', self.ymin, 'm to',  self.ymax,'m')
-        print('along z', self.zmin,  'm to', self.zmax,'m')
-        print('------------------')
+        print('Nbins:    Nx:', self.Nx, ', Ny:',self.Ny, ', Nz',self.Nz)
+        print('along x from ', self.xmin, 'm to', self.xmax,'m')
+        print('along y from ', self.ymin, 'm to',  self.ymax,'m')
+        print('along z from ', self.zmin,  'm to', self.zmax,'m')
+        print('------------------\n')
 
-        print('--field Geo--:')
-        print('along x', self.xmin_field, 'm to', self.xmax_field,'m')
-        print('along y', self.ymin_field, 'm to',  self.ymax_field,'m')
-        print('along z', self.zmin_field,  'm to', self.zmax_field,'m')
+        print('-- Geometry for the Field Maps --')
+        print('along x from ', self.xmin_field, 'm to', self.xmax_field,'m')
+        print('along y from ', self.ymin_field, 'm to', self.ymax_field,'m')
+        print('along z from ', self.zmin_field, 'm to', self.zmax_field,'m')
 
-        print('--ghost Geo--:')
-        print('along x', self.xmin_ghost, 'm to', self.xmax_ghost,'m')
-        print('along y', self.ymin_ghost, 'm to',  self.ymax_ghost,'m')
-        print('along z', self.zmin_ghost,  'm to', self.zmax_ghost,'m')
-                
+        print('-- Geometry for the Potential Map (with ghost cells) --')
+        print('along x from ', self.xmin_ghost, 'm to', self.xmax_ghost,'m')
+        print('along y from ', self.ymin_ghost, 'm to', self.ymax_ghost,'m')
+        print('along z from ', self.zmin_ghost, 'm to', self.zmax_ghost,'m')
+
 
         """ dictionary of 'potential':'x/y/z indices' for constant boundary conditions"""
         self.boundaries = {}
@@ -81,7 +81,10 @@ class geometry:
         self.cathode_xpos = []
         
         n_anode_planes = len(self.param['anode_plane']['plane'])
-        #print('n anode planes: ', n_anode_planes)
+        if(n_anode_planes > 1):
+            print('Having more than one anode plane in the geometry is a feature not yet implemented, sorry')
+            exit()
+            
         for i in range(n_anode_planes):
             bound = self.boundary_plane(self.param['anode_plane']['plane'][i])#, "anode_"+str(i))
 
@@ -96,8 +99,10 @@ class geometry:
                 anode_xpos = self.param['anode_plane']['plane'][i][0]
                 anode_V = potential
                 
+
+
+
         n_cathode_planes = len(self.param['cathode_plane']['plane'])
-        #print('n cathode planes: ', n_cathode_planes)
         if(n_cathode_planes > 1):
             print('Only one cathode plane can be simulated, please update!')
             exit()
@@ -126,17 +131,12 @@ class geometry:
 
 
         
-        print('-->> boundaries')
-        print(self.boundaries)
+        #print('-->> boundaries')
+        #print(self.boundaries)
 
-        #print('ANODE IDX = ', self.anode_idx)
-        #print('CATHODE IDX = ', self.cathode_idx)
 
         self.E0 = (anode_V-cathode_V)/(np.fabs(anode_xpos-cathode_xpos))
         self.L_drift = np.fabs(anode_xpos-cathode_xpos)
-        
-
-        #print('Default drift field: ', self.E0*1e-2, 'V/cm')
         
     def build_distortions(self, dist_param):
         self.ds_path = dist_param['ds']
@@ -155,11 +155,11 @@ class geometry:
             self.Nz_path = int(np.floor(self.Lz / self.dz_path + 1e-9))
 
 
-        print('--Binning for distortion maps:--')
-        print('x:', self.Nx_path, ' with steps ', self.dx_path)
-        print('y:', self.Ny_path, ' with steps ', self.dy_path)
-        print('z:', self.Nz_path, ' with steps ', self.dz_path)
-
+        print('-- Geometry of the Distortion Maps --')
+        print('Nx:', self.Nx_path, ' with steps of ', self.dx_path, 'm')
+        print('Ny:', self.Ny_path, ' with steps of ', self.dy_path, 'm')
+        print('Nz:', self.Nz_path, ' with steps of ', self.dz_path, 'm')
+        print('\n')
         
     def boundary_plane(self, plane_param):
 
@@ -174,11 +174,11 @@ class geometry:
                 exit()
             i0 = int((xmin - self.xmin_ghost)/self.dx)
             i1 = int((xmax - self.xmin_ghost)/self.dx)
-            #print('ghost x boundary from bin ', i0, ' to ', i1)
+
             bound['x_ghost'] = (i0, i1)
             i0 = int((xmin - self.xmin)/self.dx)
             i1 = int((xmax - self.xmin)/self.dx)
-            #print('x boundary from bin ', i0, ' to ', i1)
+
             bound['x'] = (i0, i1)
 
 
@@ -189,11 +189,11 @@ class geometry:
                 exit()
             i0 = int((ymin - self.ymin_ghost)/self.dy)
             i1 = int((ymax - self.ymin_ghost)/self.dy)
-            #print('ghost y boundary from bin ', i0, ' to ', i1)
+
             bound['y_ghost'] = (i0, i1)
             i0 = int((ymin - self.ymin)/self.dy)
             i1 = int((ymax - self.ymin)/self.dy)
-            #print(' y boundary from bin ', i0, ' to ', i1)
+
             bound['y'] = (i0, i1)
 
         if(z is not None and dz is not None):
@@ -203,11 +203,11 @@ class geometry:
                 exit()
             i0 = int((zmin - self.zmin_ghost)/self.dz)
             i1 = int((zmax - self.zmin_ghost)/self.dz)
-            #print('ghost z boundary from bin ', i0, ' to ', i1)
+
             bound['z_ghost'] = (i0, i1)
             i0 = int((zmin - self.zmin)/self.dz)
             i1 = int((zmax - self.zmin)/self.dz)
-            #print('z boundary from bin ', i0, ' to ', i1)
+
             bound['z'] = (i0, i1)
 
         return bound

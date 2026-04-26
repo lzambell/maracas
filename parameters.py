@@ -19,9 +19,6 @@ class parameters:
         self.physics_param = self.read_input('physics')
         self.set_physics_quantities()
 
-        print('---- ')
-        print('Default drift field = ', self.E0*1e-2, ' V/cm')
-        print('Velocity of the ions = ', self.mu * self.E0, ' m/s')
         
         self.simu_param = self.read_input('simulation')
         self.set_simulation_quantities()
@@ -29,17 +26,23 @@ class parameters:
         self.distortion_param = self.read_input('distortions')
         self.geo.build_distortions(self.distortion_param)
         
+
+        print('--------')
+        print('Default drift field  = ', self.E0*1e-2, ' V/cm')
+        print('Velocity of the ions = ', self.mu * self.E0, ' m/s')
+        print(f'alpha = {self.alpha:.4f}')        
+        print('--------')
         
         """ rho (Nx, Ny, Nz), density at the grid center """
         self.rho = np.zeros((self.geo.Nx, self.geo.Ny, self.geo.Nz), dtype=np.float64)
-        #print(self.geo.Nx, self.geo.Ny, self.geo.Nz)
+
 
     
         """ initialisation of charge density array  """
         rho_start = self.set_initial_density(val_anode=0, val_cathode=self.rho0*self.alpha**2)
         rho_2d    = np.repeat([rho_start], self.geo.Ny, axis=0).T
         self.rho = np.repeat(rho_2d[:, :, None], repeats = self.geo.Nz, axis=2)
-        #print('RHO SHAPE', self.rho.shape)
+
 
 
         
@@ -48,7 +51,6 @@ class parameters:
         if(self.geo.dim == 1):
             nx, ny, nz = self.geo.Nx, self.geo.Ny, 1
             Nx, Ny, Nz = self.geo.Nx+1, 1, 1
-
             Npx, Npy, Npz = self.geo.Nx_path, 1, 1
             
             self.x = np.linspace(self.geo.xmin+self.geo.dx/2, self.geo.xmax-self.geo.dx/2, nx)
@@ -136,7 +138,7 @@ class parameters:
     def set_physics_quantities(self):
         self.kB = 1.380649e-23 #J/K
         self.q  = 1.602e-19 #C
-        self.epsilon = 1.504 * 8.854e-12 #F/m
+        self.epsilon = 1.504 * 8.854e-12 #F/m #FOR LAR!!!
 
 
         self.mu = float(self.physics_param['mu'])
@@ -174,7 +176,7 @@ class parameters:
         for plane, bc in self.geo.boundaries.items():
             if("field_cage" not in plane):
                 continue
-            #print(bc)
+
             for name, val in bc.items():
                 if(name == "gradient"):
                     V0, V1 = float(val[0]), float(val[1])
@@ -280,7 +282,7 @@ class parameters:
             planes.append((x0, plane_value))
             
         planes.sort(key=lambda p: p[0]) #sort along x index
-        #print('density ', planes)
+
 
         density = np.zeros(self.geo.Nx)
 
@@ -322,7 +324,8 @@ class parameters:
 
             '''
             #attempt to study the case when the anode/cathode are small than FC
-            #doesnt work well yet ...
+            #doesnt work well yet ... 
+            # NEED SOME THINKING
             if(y0 != 1):
                X[ 0, :y0, :]  = X[ 1, :y0, :]
                X[ -1, :y0, :] = X[ -2, :y0, :]
