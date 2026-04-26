@@ -1,0 +1,7 @@
+*ipynb
+*py~
+__pycache__
+*.pyc
+results/
+# OS files
+.DS_Store
