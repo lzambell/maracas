@@ -1,0 +1,77 @@
+{    
+    "simulation":
+    {
+	"dt":0.002,//s, //time of one increment
+    	"conv":10, //convergence criteria to stop
+	"timesteps":800000, //max nb of iteration
+    },
+
+    "physics":{	    		
+	"T":89,      //LAr temperature in K	
+	"mu":1.6e-7, //ion mobility in m^2/V/s
+	"S":2e-10,   //charge input rate in C/m^3/s
+	"D":0,       //Diffusion coefficient (otherwise set to mu*kB*T/q)
+    },
+    
+    "lar_flow":{
+	"constant":[0.000,0.00,0],//in m/s
+	//"constant":[0.000,-0.04,0],//in m/s
+	//"vortex":[0, 3.6, 30000, 0, 6, -50000],
+	//"vortex_1":[1.7, 5.1, -300000, -3, 9.75,  500000],
+	//"vortex_2":[-1.7, 1.7, 300000, -3, 9.75, -500000],
+	//"vortex":[0, 6.8, -3000000, -3, 9.75,  5000000],
+	//to implement: other generic options, input file
+    },
+    
+    "geometry":{
+	"dimension":2,
+	"direction":"vertical", //for the plots
+	"dx":0.05, //voxel size in m
+	"dy":0.05,
+	"dz":0,
+
+	//box definition  3D corner coordinates + 3D lengthes
+	//(X, Y, Z, DX, DY, DZ)
+	//-> set irrelevant coordinates to null
+
+	//simulation volume
+	"volume":{
+	    "box":[-3.4, -3.525, null, 3.4, 7.05, null],
+	},
+
+	//Put the same as for the simulation volume
+	"field_cage":{
+	    "box":[-3.4, -3.525, null, 3.4, 7.05, null],
+	    "gradient":[-1500,-154500],
+	},
+
+
+	//plane definition as for the box: 3D corner coordinates + 3D lengthes
+	//(x0, y0, z0, dx, dy, dz)
+	//anode and cathode planes must close the FC box, even if they are smaller in reality !
+	//Missing coordinate are set to null
+		
+	"anode_plane":{
+	    "plane":[[-3.4, -3.525, null, 0, 7.05, null]],
+	    "potential":[-1500], //in V
+
+	},
+	
+	"cathode_plane":{
+	    "plane":[[0, -3.525, null, 0, 7.05, null]],
+	    "potential":[-154500], //in V
+	},	
+		
+    },
+    
+    "distortions":{
+	//all units in m
+	"ds":0.001, //step size for electron path
+	"dx":0.01,  //distortion maps binning in m
+	"dy":0.01,  //distortion maps binning in m
+	"dz":0,
+	//not yet used
+	"collection_area":[-3.4, -3.366, null, 0, 6.73, null],
+    },
+}
+ 
