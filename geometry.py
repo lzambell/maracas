@@ -86,7 +86,7 @@ class geometry:
             exit()
             
         for i in range(n_anode_planes):
-            bound = self.boundary_plane(self.param['anode_plane']['plane'][i])#, "anode_"+str(i))
+            bound = self.boundary_plane(self.param['anode_plane']['plane'][i])
 
             potential = self.param['anode_plane']['potential'][i]
             bound['V'] = potential
@@ -122,7 +122,9 @@ class geometry:
 
 
 
-       
+        self.drift_forward = self.cathode_xpos[0] > self.anode_xpos[0]
+        print('\n Do ions drift in forward direction ? ', 'Yes!' if self.drift_forward else 'No!')
+
        
         bound = self.boundary_plane(self.param['field_cage']['box'])
         FC_potential = self.param['field_cage']['gradient']
@@ -135,9 +137,11 @@ class geometry:
         #print(self.boundaries)
 
 
-        self.E0 = (anode_V-cathode_V)/(np.fabs(anode_xpos-cathode_xpos))
+        self.E0 = (anode_V-cathode_V)/(np.fabs(anode_xpos-cathode_xpos))        
         self.L_drift = np.fabs(anode_xpos-cathode_xpos)
         
+        
+
     def build_distortions(self, dist_param):
         self.ds_path = dist_param['ds']
         self.dx_path = dist_param['dx']
@@ -155,11 +159,27 @@ class geometry:
             self.Nz_path = int(np.floor(self.Lz / self.dz_path + 1e-9))
 
 
+
+        xx, yy, zz = self.simulation_box(dist_param['collection_area'])            
+
+
+        """ detector collection volume """
+        self.coll_xmin, self.coll_xmax = xx[0], xx[1]
+        self.coll_ymin, self.coll_ymax = yy[0], yy[1]
+        self.coll_zmin, self.coll_zmax = zz[0], zz[1]
+
+            
         print('-- Geometry of the Distortion Maps --')
         print('Nx:', self.Nx_path, ' with steps of ', self.dx_path, 'm')
         print('Ny:', self.Ny_path, ' with steps of ', self.dy_path, 'm')
         print('Nz:', self.Nz_path, ' with steps of ', self.dz_path, 'm')
         print('\n')
+
+
+        print('- Collection Volume -')
+        print(f' x: {self.coll_xmin:.2f} to {self.coll_xmax:.2f}')
+        print(f' y: {self.coll_ymin:.2f} to {self.coll_ymax:.2f}')
+        print(f' z: {self.coll_zmin:.2f} to {self.coll_zmax:.2f}')
         
     def boundary_plane(self, plane_param):
 
