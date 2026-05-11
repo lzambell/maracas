@@ -10,6 +10,10 @@ class parameters(IsDescription):
     Ny = UInt32Col()
     Nz = UInt32Col()
 
+    Nx_path = UInt32Col()
+    Ny_path = UInt32Col()
+    Nz_path = UInt32Col()
+
     xmin = Float64Col()
     xmax = Float64Col()
     ymin = Float64Col()
@@ -20,6 +24,17 @@ class parameters(IsDescription):
     dx = Float64Col()
     dy = Float64Col()
     dz = Float64Col()
+    
+    dx_path = Float64Col()
+    dy_path = Float64Col()
+    dz_path = Float64Col()
+
+    coll_xmin = Float64Col()
+    coll_xmax = Float64Col()
+    coll_ymin = Float64Col()
+    coll_ymax = Float64Col()
+    coll_zmin = Float64Col()
+    coll_zmax = Float64Col()
 
     dt =  Float64Col()
     
@@ -33,6 +48,7 @@ class parameters(IsDescription):
         
     alpha = Float64Col()
 
+    
 def create_tables(h5file, param):
     if(param.geo.dim == 1):
         create_tables_1D(h5file, param)
@@ -40,7 +56,7 @@ def create_tables(h5file, param):
         create_tables_2D(h5file, param)
     else:
         create_tables_3D(h5file, param)
-       
+
 def create_tables_1D(h5file, param):
     table = h5file.create_table("/", 'parameters', parameters, 'parameters')
 
@@ -54,6 +70,8 @@ def create_tables_1D(h5file, param):
     }
     SCE_1D = type("SCE_1D", (IsDescription,), desc)
     table = h5file.create_table("/", 'SCE_1D', SCE_1D, "SCE_1D")
+
+ 
 
 
 def create_tables_2D(h5file, param):
@@ -93,6 +111,66 @@ def create_tables_3D(h5file, param):
 
 
 
+def create_tables_merge(h5file, param):
+    if(param.geo.dim == 1):
+        create_tables_1D_merge(h5file, param)
+    elif(param.geo.dim == 2):
+        create_tables_2D_merge(h5file, param)
+    else:
+        create_tables_3D_merge(h5file, param)
+   
+def create_tables_1D_merge(h5file, param):
+    table = h5file.create_table("/", 'parameters', parameters, 'parameters')
+
+    # Build dynamic description
+    desc = {
+        "n_iter": Int64Col(),
+        "rho": Float64Col(shape=(param.geo.Nx+1)),
+        "Ex":  Float64Col(shape=(param.geo.Nx+2)),
+        "flow_x":Float64Col(shape=(param.geo.Nx+2)),
+
+    }
+    SCE_1D = type("SCE_1D", (IsDescription,), desc)
+    table = h5file.create_table("/", 'SCE_1D', SCE_1D, "SCE_1D")
+    
+def create_tables_2D_merge(h5file, param):
+    table = h5file.create_table("/", 'parameters', parameters, 'parameters')
+
+    # Build dynamic description
+    desc = {
+        "n_iter": Int64Col(),
+        "rho": Float64Col(shape=(param.geo.Nx+1, param.geo.Ny)),
+        "Ex":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1)),
+        "Ey":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1)),
+        "flow_x":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1)),
+        "flow_y":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1)),
+        
+    }
+    SCE_2D = type("SCE_2D", (IsDescription,), desc)    
+    table = h5file.create_table("/", 'SCE_2D', SCE_2D, "SCE_2D")
+
+
+    
+def create_tables_3D_merge(h5file, param):
+    table = h5file.create_table("/", 'parameters', parameters, 'parameters')
+
+    desc = {
+        "n_iter": Int64Col(),
+        "rho": Float64Col(shape=(param.geo.Nx+1, param.geo.Ny, param.geo.Nz)),
+        "Ex":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        "Ey":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        "Ez":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        "flow_x":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        "flow_y":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        "flow_z":  Float64Col(shape=(param.geo.Nx+2, param.geo.Ny+1, param.geo.Nz+1)),
+        
+    }
+    SCE_3D = type("SCE_3D", (IsDescription,), desc)
+    table = h5file.create_table("/", 'SCE_3D', SCE_3D, "SCE_3D")
+
+
+
+
 def store_parameters(h5file, param):
     pm = h5file.root.parameters.row
     
@@ -105,9 +183,18 @@ def store_parameters(h5file, param):
     pm['Ny'] = param.geo.Ny
     pm['Nz'] = param.geo.Nz
 
+    
+    pm['Nx_path'] = param.geo.Nx_path
+    pm['Ny_path'] = param.geo.Ny_path
+    pm['Nz_path'] = param.geo.Nz_path
+
     pm['dx'] = param.geo.dx
     pm['dy'] = param.geo.dy
     pm['dz'] = param.geo.dz
+
+    pm['dx_path'] = param.geo.dx_path
+    pm['dy_path'] = param.geo.dy_path
+    pm['dz_path'] = param.geo.dz_path
 
     pm['xmin'] = param.geo.xmin
     pm['ymin'] = param.geo.ymin
@@ -117,6 +204,16 @@ def store_parameters(h5file, param):
     pm['ymax'] = param.geo.ymax
     pm['zmax'] = param.geo.zmax
 
+
+    pm['coll_xmin'] = param.geo.coll_xmin
+    pm['coll_ymin'] = param.geo.coll_ymin
+    pm['coll_zmin'] = param.geo.coll_zmin
+
+    pm['coll_xmax'] = param.geo.coll_xmax
+    pm['coll_ymax'] = param.geo.coll_ymax
+    pm['coll_zmax'] = param.geo.coll_zmax
+
+    
     pm['dt'] = param.dt
 
     pm['mu'] = param.mu
