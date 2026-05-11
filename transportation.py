@@ -2,7 +2,7 @@ from numba import njit, prange
 import numpy as np
 
 @njit(parallel=True)
-def divergence_upwind_3d(rho, vx, vy, vz, dx, dy, dz):
+def divergence_upwind_3d(rho, vx, vy, vz, dx, dy, dz, is_forward):
     """
     inputs
     rho : (Nx, Ny, Nz)
@@ -29,6 +29,47 @@ def divergence_upwind_3d(rho, vx, vy, vz, dx, dy, dz):
                 else:       # flow from right
                     flux_x[i, j, k] = v * rho[i, j, k]
 
+
+
+    # Boundary x = 0
+    for j in prange(Ny):
+        for k in range(Nz):
+            v = vx[0, j, k]
+
+            if is_forward:
+                #at anode
+                # ions drift +x
+                if v < 0:   # outflow
+                    flux_x[0, j, k] = v * rho[0, j, k]
+                else:
+                    flux_x[0, j, k] = 0.0
+            else:
+                #at cathode
+                # ions drift -x
+                if v > 0:   # outflow 
+                    flux_x[0, j, k] = 0.0
+                else:
+                    flux_x[0, j, k] = v * rho[0, j, k]
+                    
+
+    # Boundary x = Nx
+    for j in prange(Ny):
+        for k in range(Nz):
+            v = vx[Nx, j, k]
+
+            if is_forward:
+                # ions drift +x
+                if v > 0:   # outflow
+                    flux_x[Nx, j, k] = v * rho[Nx-1, j, k]
+                else:
+                    flux_x[Nx, j, k] = 0.0
+            else:
+                # ions drift -x
+                if v < 0:   # outflow
+                    flux_x[Nx, j, k] = 0.0
+                else:
+                    flux_x[Nx, j, k] = v * rho[Nx-1, j, k]
+    """
     # Boundary x = 0 (i = 0) — only outflow allowed
     for j in prange(Ny):
         for k in range(Nz):
@@ -46,7 +87,8 @@ def divergence_upwind_3d(rho, vx, vy, vz, dx, dy, dz):
                 flux_x[Nx, j, k] = v * rho[Nx-1, j, k] # flowing out of domain
             else:
                 flux_x[Nx, j, k] = 0.0 # no incoming flux
-
+    """
+    
     # Add contribution
     for i in prange(Nx):
         for j in range(Ny):
@@ -144,7 +186,7 @@ def transport_charge(param):
 
 
     """ compute the flux divergence """
-    div = divergence_upwind_3d(param.rho, vx_fc, vy_fc, vz_fc, param.geo.dx, param.geo.dy, param.geo.dz)
+    div = divergence_upwind_3d(param.rho, vx_fc, vy_fc, vz_fc, param.geo.dx, param.geo.dy, param.geo.dz, param.geo.drift_forward)
 
     """ move charges """
     param.rho += -param.dt*div

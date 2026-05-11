@@ -27,12 +27,22 @@ tstart = time.time()
 #configure the simulation
 param = parameters.parameters(args.input)
 
+
 #configure the plotter
-plot = plot.plotter_2D(param, args.out)
+if(param.geo.dim == 1):
+    plotting = plot.plotter_1D
+elif(param.geo.dim == 2):
+    plotting = plot.plotter_2D
+else:
+    plotting = plot.plotter_3D
+plot = plotting(param, args.out)
 
-plot.show_LAr_flow(param)
 
-
+#plot.show_LAr_flow(param)
+#plot.show_projection_along_y(param, "Ex", zbin=20)
+#plot.show_projection_along_y(param, "Ey", zbin=20)
+#plot.show_projection_along_y(param, "Ez", zbin=20)
+#exit()
 
 #create output file (hdf5)
 output = args.out
@@ -74,21 +84,39 @@ for t in range(param.timesteps):
     
 
     #if(res <= param.conv):
-    if(( t>0 and t%10000==0) or res <= param.conv):
+    #if(( t>0 and t%10000==0) or res <= param.conv):
+    if(( t>0 and t%500==0) or res <= param.conv):
+        #if(t>0  or res <= param.conv):
+        #if(res <= param.conv):
         print('itreation ',t, " convergence is at: ", res)
-
-        plot.show_evolution(param, iteration=t)
-
-        plot.show_velocity(param)
-        plot.show_projection_along_y(param, "rho")
-        plot.show_projection_along_y(param, "Ex")
-        plot.show_projection_along_y(param, "Ey")
-        plot.show_projection_along_y(param, "phi")
-        
-
+        #plot.show_evolution(param, iteration=t)
+        #print('Ex tests ', param.Ex[34, 0, 0], param.Ex[34, -1, 0] , 'min', np.min(param.Ex), 'max', np.max(param.Ex))
+        #print('Ey tests ', param.Ey[34, 0, 0], param.Ey[34, -1, 0] , 'min', np.min(param.Ey), 'max', np.max(param.Ey))
+        """
+        plot.show_slices(param, ybin=10, zbin=10)
+        plot.show_slices(param, ybin=20, zbin=20)
+        plot.show_slices(param, ybin=30, zbin=30)
+        """
+        #plot.show_Etot(param, iteration=t)
         if(res <= param.conv):
             #simulation finished !
             print('simulation converged!')            
+
+            plot.show_evolution(param, iteration=t)
+            plot.show_Etot(param, iteration=t)
+            #plot.show_projection_along_y(param, "Ex", zbin=20)
+            #plot.show_projection_along_y(param, "Ey", zbin=20)
+            #plot.show_projection_along_y(param, "Ez", zbin=20)
+            
+            
+            '''
+            plot.show_velocity(param)
+            plot.show_projection_along_y(param, "rho")
+            plot.show_projection_along_y(param, "Ex")
+            plot.show_projection_along_y(param, "Ey")
+            plot.show_projection_along_y(param, "phi")
+            '''
+            
             break
         
 store.store_SCE(fout, t, param)
