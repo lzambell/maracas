@@ -1,0 +1,73 @@
+{    
+    "simulation":
+    {
+	"dt":0.002,//s, //time of one increment
+    	"conv":50, //convergence criteria to stop
+	"timesteps":800000, //max nb of iteration
+    },
+
+    "physics":{	    		
+	"T":89,      //LAr temperature in K	
+	"mu":1.6e-7, //ion mobility in m^2/V/s
+	"S":2e-10,   //charge input rate in C/m^3/s
+	"D":0,       //Diffusion coefficient (otherwise set to mu*kB*T/q)
+    },
+    
+    "lar_flow":{
+	"constant":[0.000,0.00,0.00],//in m/s
+	//"vortex":[0, 3.6, 30000, 0, 6, -50000],
+	//to implement: other generic options, input file
+    },
+    
+    "geometry":{
+	"dimension":3,
+	"direction":"vertical", //for the plots
+	"dx":0.05, //voxel size in m
+	"dy":0.05, 
+	"dz":0.05,
+
+	//box definition  3D corner coordinates + 3D lengthes
+	//(X, Y, Z, DX, DY, DZ)
+	//-> set irrelevant coordinates to null
+
+	//simulation volume
+	"volume":{
+	    "box":[-3.4, -3.525, -0.16, 3.4, 7.05, 3.32],
+	},
+
+	
+	"field_cage":{
+	    "box":[-3.4, -3.525, -0.16, 3.4, 7.05, 3.32],
+	    "gradient":[-1500,-154500],
+	},
+
+
+	//plane definition as for the box: 3D corner coordinates + 3D lengthes
+	//(x0, y0, z0, dx, dy, dz)
+	//--> missing coordinate are null
+	//NB: can set multiple anode planes !
+	//FIY: anode/cathode planes can be smaller than the field cage box !
+	
+	"anode_plane":{
+	    "plane":[[-3.4, -3.525, -0.16, 0.0, 7.05, 3.32]],
+	    "potential":[-1500], //in kV
+
+	},
+	
+	"cathode_plane":{
+	    "plane":[[0.0, -3.525, -0.16, 0.0, 7.05, 3.32]],
+	    "potential":[-154500], //in V
+	},	
+		
+    },
+    
+    "distortions":{
+	//all units in m
+	"ds":0.001, //step size for electron path
+	"dx":0.05,  //distortion maps binning in m
+	"dy":0.05,  //distortion maps binning in m
+	"dz":0.05,  //distortion maps binning in m
+	"collection_area":[-3.4, -3.365, 0.0, 3.4, 6.73, 3.0],
+	},
+}
+ 
