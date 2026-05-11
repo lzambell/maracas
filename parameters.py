@@ -40,6 +40,7 @@ class parameters:
     
         """ initialisation of charge density array  """
         rho_start = self.set_initial_density(val_anode=0, val_cathode=self.rho0*self.alpha**2)
+        print(rho_start)
         rho_2d    = np.repeat([rho_start], self.geo.Ny, axis=0).T
         self.rho = np.repeat(rho_2d[:, :, None], repeats = self.geo.Nz, axis=2)
 
@@ -122,8 +123,8 @@ class parameters:
         self.boundary_conditions['field_cage'] = self.extract_FC_BC()
         self.boundary_conditions['anode'] = self.extract_plane_BC("anode")
         self.boundary_conditions['cathode'] = self.extract_plane_BC("cathode")
-        #print('BC are: ')
-        #print(self.boundary_conditions)
+        print('BC are: ')
+        print(self.boundary_conditions)
 
 
         
@@ -179,8 +180,11 @@ class parameters:
 
             for name, val in bc.items():
                 if(name == "gradient"):
-                    V0, V1 = float(val[0]), float(val[1])
-                    
+                    if(self.geo.drift_forward):
+                        V0, V1 = float(val[0]), float(val[1])
+                    else:
+                        V1, V0 = float(val[0]), float(val[1])
+                
                     if(V0 > self.max_potential):self.max_potential = V0
                     if(V0 < self.min_potential):self.min_potential = V0
                     if(V1 > self.max_potential):self.max_potential = V1
@@ -252,6 +256,14 @@ class parameters:
             ny = y1-y0+1
             phi_2d = np.repeat([self.boundary_conditions['field_cage']['gradient']] , ny, axis=0).T
             self.phi[x0:x1+1, y0:y1+1,:] = np.repeat(phi_2d[:,:,None], repeats=self.geo.Nz, axis=2)
+
+            
+        elif(self.geo.dim == 3):
+            x0, x1, y0, y1, z0, z1 = self.boundary_conditions['field_cage']['index']
+            ny = y1-y0+1
+            phi_2d = np.repeat([self.boundary_conditions['field_cage']['gradient']] , ny, axis=0).T
+            nz = z1-z0+1
+            self.phi[x0:x1+1, y0:y1+1, z0:z1+1] = np.repeat(phi_2d[:,:,None], repeats=nz, axis=2)
             
     def set_initial_density(self, val_anode, val_cathode):
 
@@ -260,45 +272,31 @@ class parameters:
         for plane, bc in self.geo.boundaries.items():
             if('anode' in plane):
                 plane_value = val_anode
-                #print("at anode: ", plane_value)
+                print("at anode: ", plane_value)
             elif('cathode' in plane):
                 plane_value = val_cathode
-                #print("at cathode: ", plane_value)
+                print("at cathode: ", plane_value)
             else:
                 continue
             
             for name, val in bc.items():
                 if(name == "x"):
                     x0, x1 = val
-                    
+                    print('->', x0, x1)                    
                 else:
                     continue
 
-            if(x0 < 0 and x1 < 0):
-                continue
-            if(x0 != x1):
-                continue
+            if(x0 == x1 and x0 >= 0):
+                planes.append((x0,  plane_value))
 
-            planes.append((x0, plane_value))
+            
+            
+            #planes.append((x0, plane_value))
             
         planes.sort(key=lambda p: p[0]) #sort along x index
 
 
-        density = np.zeros(self.geo.Nx)
-
-        def set_val(x):
-            for i in range(len(planes) - 1):
-                x0, V0 = planes[i]
-                x1, V1 = planes[i+1]
-
-                x0 = self.geo.xmin + x0*self.geo.dx
-                x1 = self.geo.xmin + x1*self.geo.dx
-                if x0 <= x <= x1:
-                    return V0 + (V1 - V0) * (x - x0) / (x1 - x0)
-
-        for i in range(self.geo.Nx):
-            x = self.geo.xmin + i*self.geo.dx
-            density[i] = set_val(x)
+        density = np.linspace(planes[0][1], planes[1][1], self.geo.Nx, endpoint=True)
         return density
         
 
@@ -315,13 +313,22 @@ class parameters:
             X[x0:x1+1, 0, 0] = 2*self.boundary_conditions['field_cage']['gradient'] - X[x0:x1+1, 2,0]
             X[x0:x1+1,-1, 0] = 2*self.boundary_conditions['field_cage']['gradient'] - X[x0:x1+1,-3,0]
 
-            #anode
-            x0, x1, y0, y1, _,_ =   self.boundary_conditions['anode']['index']
-            X[ 0, y0:y1+1, :]   = 2*self.boundary_conditions['anode']['potential'] - X[ 2, y0:y1+1, :]
-            #cathode
-            x0, x1, y0, y1, _,_ =   self.boundary_conditions['cathode']['index']
-            X[-1, y0:y1+1, :]   = 2*self.boundary_conditions['cathode']['potential']- X[-3, y0:y1+1, :]
-
+            
+            if(self.geo.drift_forward):
+                #anode
+                x0, x1, y0, y1, _,_ =   self.boundary_conditions['anode']['index']
+                X[ 0, y0:y1+1, :]   = 2*self.boundary_conditions['anode']['potential'] - X[ 2, y0:y1+1, :]
+                #cathode
+                x0, x1, y0, y1, _,_ =   self.boundary_conditions['cathode']['index']
+                X[-1, y0:y1+1, :]   = 2*self.boundary_conditions['cathode']['potential']- X[-3, y0:y1+1, :]
+            else:
+                #cathode
+                x0, x1, y0, y1, _,_ =   self.boundary_conditions['cathode']['index']
+                X[ 0, y0:y1+1, :]   = 2*self.boundary_conditions['cathode']['potential'] - X[ 2, y0:y1+1, :]
+                #anode
+                x0, x1, y0, y1, _,_ =   self.boundary_conditions['anode']['index']
+                X[-1, y0:y1+1, :]   = 2*self.boundary_conditions['anode']['potential']- X[-3, y0:y1+1, :]
+                
             '''
             #attempt to study the case when the anode/cathode are small than FC
             #doesnt work well yet ... 
@@ -336,12 +343,46 @@ class parameters:
 
                
         elif(self.geo.dim == 3):
-            X[:,0,:] = self.field_cage_potential
-            X[:,-1,:] = self.field_cage_potential
-            X[:,:,0] = self.field_cage_potential
-            X[:,:,-1] = self.field_cage_potential
+            x0, x1, y0, y1, z0, z1 = self.boundary_conditions['field_cage']['index']
             
+            # set BC at ghost cells for the laplacian stencil
 
 
+            ny = y1-y0+1
+            nz = z1-z0+1
+            bc_xy = np.repeat([self.boundary_conditions['field_cage']['gradient']] , ny, axis=0).T
+            bc_xz = np.repeat([self.boundary_conditions['field_cage']['gradient']] , nz, axis=0).T
+
+
+            
+            X[x0:x1+1, 0, z0:z1+1] = 2*bc_xz - X[x0:x1+1, 2, z0:z1+1]
+            X[x0:x1+1,-1, z0:z1+1] = 2*bc_xz - X[x0:x1+1,-3, z0:z1+1]
+            
+            X[x0:x1+1, y0:y1+1,  0] = 2*bc_xy - X[x0:x1+1, y0:y1+1,  2]
+            X[x0:x1+1, y0:y1+1, -1] = 2*bc_xy - X[x0:x1+1, y0:y1+1, -3]
+
+            if(self.geo.drift_forward):
+                #anode
+                x0, x1, y0, y1, z0, z1 =   self.boundary_conditions['anode']['index']
+                X[ 0, y0:y1+1, :]      = 2*self.boundary_conditions['anode']['potential'] - X[ 2, y0:y1+1, :]
+                X[ 0, :, z0:z0+1]      = 2*self.boundary_conditions['anode']['potential'] - X[ 2, :, z0:z0+1]
+                
+                #cathode
+                x0, x1, y0, y1, z0, z1 =   self.boundary_conditions['cathode']['index']
+                X[-1, y0:y1+1, :]   = 2*self.boundary_conditions['cathode']['potential']- X[-3, y0:y1+1, :]
+                X[-1, :, z0:z0+1]   = 2*self.boundary_conditions['cathode']['potential']- X[-3, :, z0:z0+1]
+            else:
+                #anode
+                x0, x1, y0, y1, z0, z1 =   self.boundary_conditions['anode']['index']
+                X[-1, y0:y1+1, :]   = 2*self.boundary_conditions['anode']['potential']- X[-3, y0:y1+1, :]
+                X[-1, :, z0:z0+1]   = 2*self.boundary_conditions['anode']['potential']- X[-3, :, z0:z0+1]
+
+                #cathode
+                x0, x1, y0, y1, z0, z1 =   self.boundary_conditions['cathode']['index']
+                X[ 0, y0:y1+1, :]      = 2*self.boundary_conditions['cathode']['potential'] - X[ 2, y0:y1+1, :]
+                X[ 0, :, z0:z0+1]      = 2*self.boundary_conditions['cathode']['potential'] - X[ 2, :, z0:z0+1]
+                
+
+                
     
    
