@@ -5,7 +5,7 @@ import time
 
 
 @nb.njit(cache=True, fastmath=True)
-def electron_mobility(E):
+def electron_mobility(E, T=89.0):
     """
     LAr electron mobility parameterization.
     Input E must be in V/cm (not kV/cm).
@@ -14,8 +14,7 @@ def electron_mobility(E):
     # convert to kV/cm
     E_kV = abs(E) * 1e-3
 
-    # constants
-    T = 89.0
+    # constants    
     T0 = 89.0
 
     a0 = 551.6
@@ -148,7 +147,7 @@ def drift_path_2d(x0, y0,
                   Ex, Ey, x_grid, y_grid,
                   xmin, xmax, dx,
                   ymin, ymax, dy,
-                  ds, E0, xanode, is_forward):
+                  ds, E0, xanode, is_forward, TLAr):
     
     max_steps = 20000
     E0 *= 1e-2
@@ -184,7 +183,7 @@ def drift_path_2d(x0, y0,
         Etot = np.sqrt(ex*ex + ey*ey)
 
         # velocity
-        mu = electron_mobility(Etot)
+        mu = electron_mobility(Etot, TLAr)
         v  = mu * Etot     # cm/sec
         v *= 1e-2 #m/sec
         
@@ -211,10 +210,11 @@ def drift_path_2d(x0, y0,
         x = x_new
         y = y_new
 
+    """ here forward refers to the drift direction """
     if(is_forward):
-        reco_x = xanode + drift_time * (electron_mobility(E0) * E0) * 1e-2
+        reco_x = xanode + drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
     else:
-        reco_x = xanode - drift_time * (electron_mobility(E0) * E0) * 1e-2
+        reco_x = xanode - drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
     reco_y = y
 
 
@@ -230,7 +230,7 @@ def drift_path_3d(x0, y0, z0,
                   xmin, xmax, dx,
                   ymin, ymax, dy,
                   zmin, zmax, dz,
-                  ds, E0, xanode, is_forward):
+                  ds, E0, xanode, is_forward, TLAr):
 
     max_steps = 20000
     E0 *= 1e-2
@@ -271,7 +271,7 @@ def drift_path_3d(x0, y0, z0,
             break  # avoid division by zero
 
         # velocity
-        mu = electron_mobility(Etot)
+        mu = electron_mobility(Etot, TLAr)
         v  = mu * Etot   # cm/s
         v *= 1e-2        # m/s
 
@@ -303,9 +303,9 @@ def drift_path_3d(x0, y0, z0,
 
     # reconstruction
     if(is_forward):
-        reco_x = xanode + drift_time * (electron_mobility(E0) * E0) * 1e-2
+        reco_x = xanode + drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
     else:
-        reco_x = xanode - drift_time * (electron_mobility(E0) * E0) * 1e-2
+        reco_x = xanode - drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
     
     reco_y = y
     reco_z = z
@@ -318,17 +318,18 @@ def drift_path_3d(x0, y0, z0,
         drift_len
     ])
 
-def compute_regular_distortions(param):
+def compute_forward_distortions(param):
 
     if(param.geo.dim == 2):
-        return compute_regular_distortions_2D(param)
+        return compute_forward_distortions_2D(param)
 
     elif(param.geo.dim == 3):
-        return compute_regular_distortions_3D(param)
+        return compute_forward_distortions_3D(param)
     else:
-        print('oops, not implemented yet')
+        print('oops forward distortions for', param.geo.dim, 'D geometry is not implemented yet!')
         
-def compute_regular_distortions_2D(param):
+def compute_forward_distortions_2D(param):
+    """ get the reconstructed position from true point """
     start_positions = [[ix,iy] for iy in range(param.geo.Ny_path) for ix in range(param.geo.Nx_path)]
         
     N = len(start_positions)
@@ -345,11 +346,11 @@ def compute_regular_distortions_2D(param):
             param.x_field, param.y_field,
             param.geo.xmin, param.geo.xmax, param.geo.dx_path,
             param.geo.ymin, param.geo.ymax, param.geo.dy_path,
-            param.geo.ds_path, param.E0, param.geo.anode_xpos[0], param.geo.drift_forward
+            param.geo.ds_path, param.E0, param.geo.anode_xpos[0], param.geo.drift_forward, param.T
         )
         
-        param.delta_x[pos[0], pos[1], 0] = res[0]
-        param.delta_y[pos[0], pos[1], 0] = res[1]
+        param.forward_delta_x[pos[0], pos[1], 0] = res[0]
+        param.forward_delta_y[pos[0], pos[1], 0] = res[1]
 
 
 
@@ -376,7 +377,8 @@ def compute_regular_distortions_2D(param):
 
 
         
-def compute_regular_distortions_3D(param):
+def compute_forward_distortions_3D(param):
+    """ get the reconstructed position from true point """
     start_positions = [[ix,iy, iz] for iz in range(param.geo.Nz_path) for iy in range(param.geo.Ny_path) for ix in range(param.geo.Nx_path)]
         
     N = len(start_positions)
@@ -397,12 +399,12 @@ def compute_regular_distortions_3D(param):
             param.geo.xmin, param.geo.xmax, param.geo.dx_path,
             param.geo.ymin, param.geo.ymax, param.geo.dy_path,
             param.geo.zmin, param.geo.zmax, param.geo.dz_path,
-            param.geo.ds_path, param.E0, param.geo.anode_xpos[0], param.geo.drift_forward
+            param.geo.ds_path, param.E0, param.geo.anode_xpos[0], param.geo.drift_forward, param.T
         )
         
-        param.delta_x[pos[0], pos[1], pos[2]] = res[0]
-        param.delta_y[pos[0], pos[1], pos[2]] = res[1]
-        param.delta_z[pos[0], pos[1], pos[2]] = res[2]
+        param.forward_delta_x[pos[0], pos[1], pos[2]] = res[0]
+        param.forward_delta_y[pos[0], pos[1], pos[2]] = res[1]
+        param.forward_delta_z[pos[0], pos[1], pos[2]] = res[2]
 
 
 
@@ -415,7 +417,7 @@ def compute_regular_distortions_3D(param):
             trajectories.append(traj)
 
 
-        if(i%10000==0):
+        if(i%50000==0):
             print(i, 'at',pos)
             xs = param.geo.xmin + pos[0]*param.geo.dx_path + param.geo.dx_path/2. 
             ys = param.geo.ymin + pos[1]*param.geo.dy_path + param.geo.dy_path/2. 
