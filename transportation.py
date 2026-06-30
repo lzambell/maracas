@@ -180,10 +180,14 @@ def divergence_upwind_3d(rho, vx, vy, vz, dx, dy, dz, is_forward):
     
 def transport_charge(param):
 
+    if(param.static_simulation == True):
+        return 0
+    
     vx_fc = mean_velocities_at_faces(0, param.geo.dim, param.mu * param.Ex, param.flow_x)
     vy_fc = mean_velocities_at_faces(1, param.geo.dim, param.mu * param.Ey, param.flow_y)
     vz_fc = mean_velocities_at_faces(2, param.geo.dim, param.mu * param.Ez, param.flow_z)
 
+    prev_rho = param.rho.copy()
 
     """ compute the flux divergence """
     div = divergence_upwind_3d(param.rho, vx_fc, vy_fc, vz_fc, param.geo.dx, param.geo.dy, param.geo.dz, param.geo.drift_forward)
@@ -197,6 +201,12 @@ def transport_charge(param):
     """ safety fix, no negative ion concentration """
     param.rho = np.maximum(param.rho, 0)
 
+    diff = (param.rho - prev_rho)/param.dt
+    num = np.linalg.norm(diff.ravel())          # L2 norm of the change
+    den = max(np.linalg.norm(prev_rho.ravel()), 1e-30)
+    rel_change = num / den
+    
+    return rel_change #np.max(param.rho - prev_rho)
 
 
 def mean_velocities_at_faces(axis, dim, attraction, flow):
