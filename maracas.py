@@ -9,6 +9,7 @@ import parameters as parameters
 import transportation as trans
 import gauss_law as gaus
 import compute_distortions as dist
+import compute_backward_distortions as back
 import plotting as plot
 import store as store
 
@@ -39,104 +40,78 @@ plot = plotting(param, args.out)
 
 
 #plot.show_LAr_flow(param)
-#plot.show_projection_along_y(param, "Ex", zbin=20)
-#plot.show_projection_along_y(param, "Ey", zbin=20)
-#plot.show_projection_along_y(param, "Ez", zbin=20)
-#exit()
+
 
 #create output file (hdf5)
 output = args.out
-fout = 'results/'+output+"_"+str(param.geo.dim)+"D"
+fout = 'results/'+str(param.geo.dim)+"D/"+output
 fout = tab.open_file(fout+'.h5', mode="w", title="MARACAS Simulation in "+str(param.geo.dim)+"D")
 store.create_tables(fout, param)
 store.store_parameters(fout, param)
 
 res = 10
 
-#to monitor the simulation speed and convergence
-t_transport, t_poisson, t_field, conv = [], [], [], []
+#to monitor convergence
+res_poisson, conv_simu = [], []
 
 print('\n\n SCE Simulation \n\n')
 
 for t in range(param.timesteps):
-    #step 1: move the charge according to the flow and cathode attraction
-    t0 = time.time()
-    trans.transport_charge(param)
+    #step 1: solve poisson equation until convergence
+    residual, niter = gaus.poisson_solve(param)
+               
+    res_poisson.extend(residual)
 
 
-    #step 2: solve poisson equation
-    t1 = time.time()    
-    res = gaus.poisson_solve(param)
-
-    #step 3: compute new field maps
-    t2 = time.time()
+    #step 2: compute new field maps
     gaus.compute_field_fdm(param)
-
-
-    t3 = time.time()
     
-    if(t>0):
-        t_transport.append((t1-t0)*1e3)
-        t_poisson.append((t2-t1)*1e3)
-        t_field.append((t3-t2)*1e3)
-        
-    conv.append(res)
+    #step 3: move the charge according to the flow and cathode attraction
+    conv = trans.transport_charge(param)
+
+    if(t%100==0):
+        print("simulation at step", t)
+        print("   poisson solving converged in ", niter, " res= ", residual[-1])
+        print("   simu convergence is : ", conv)
     
+    
+    conv_simu.append(conv)
+               
+    if(conv <= param.conv_simu):
+        #simulation finished !
+        print('\n!! simulation converged !!')            
 
-    #if(res <= param.conv):
-    #if(( t>0 and t%10000==0) or res <= param.conv):
-    if(( t>0 and t%500==0) or res <= param.conv):
-        #if(t>0  or res <= param.conv):
-        #if(res <= param.conv):
-        print('itreation ',t, " convergence is at: ", res)
-        #plot.show_evolution(param, iteration=t)
-        #print('Ex tests ', param.Ex[34, 0, 0], param.Ex[34, -1, 0] , 'min', np.min(param.Ex), 'max', np.max(param.Ex))
-        #print('Ey tests ', param.Ey[34, 0, 0], param.Ey[34, -1, 0] , 'min', np.min(param.Ey), 'max', np.max(param.Ey))
-        """
-        plot.show_slices(param, ybin=10, zbin=10)
-        plot.show_slices(param, ybin=20, zbin=20)
-        plot.show_slices(param, ybin=30, zbin=30)
-        """
-        #plot.show_Etot(param, iteration=t)
-        if(res <= param.conv):
-            #simulation finished !
-            print('simulation converged!')            
-
-            plot.show_evolution(param, iteration=t)
-            plot.show_Etot(param, iteration=t)
-            #plot.show_projection_along_y(param, "Ex", zbin=20)
-            #plot.show_projection_along_y(param, "Ey", zbin=20)
-            #plot.show_projection_along_y(param, "Ez", zbin=20)
-            
-            
-            '''
-            plot.show_velocity(param)
-            plot.show_projection_along_y(param, "rho")
-            plot.show_projection_along_y(param, "Ex")
-            plot.show_projection_along_y(param, "Ey")
-            plot.show_projection_along_y(param, "phi")
-            '''
-            
-            break
+        plot.show_evolution(param, iteration=t)
+        plot.show_Etot(param, iteration=t)                    
+        break
         
 store.store_SCE(fout, t, param)
-plot.show_time_performance(t_transport, t_poisson, t_field)
-plot.show_convergence(conv)
+#plot.show_time_performance(t_transport, t_poisson, t_field)
+plot.show_convergence(res_poisson, conv_simu, param.dt, "convergence")
 
 
-print(f"SCE simulation completed in {t} iterations (equivalent to {t**param.dt:.4f} s)")
+print(f"SCE simulation completed in {t} iterations (equivalent to {t*param.dt:.4f} s)")
 print(f'it took {time.time()-tstart:.3f} s to run')
 
 print('\n\n Distortions \n\n')
+print('--->>> Forward --->>>\n')
 
-#now compute the distortions
-traj = dist.compute_regular_distortions(param)
+#now compute the forward distortions
+traj = dist.compute_forward_distortions(param)
 plot.show_distortions(param)
 plot.show_trajectories(traj, param)
+
+print('<<<--- Backward <<<---\n')
+niter, res = back.compute_backward_distortions(param)
+plot.show_inversemap_performance(niter, res)
 
 
 store.create_tables_distortions(fout, param)
 store.store_distortions(fout, param)
+
+
+import validate_distortion as val
+val.validate_maps(param, frac=0.01)
 
 fout.close()
 
