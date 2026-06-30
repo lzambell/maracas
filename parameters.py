@@ -36,13 +36,16 @@ class parameters:
         """ rho (Nx, Ny, Nz), density at the grid center """
         self.rho = np.zeros((self.geo.Nx, self.geo.Ny, self.geo.Nz), dtype=np.float64)
 
-
-    
-        """ initialisation of charge density array  """
-        rho_start = self.set_initial_density(val_anode=0, val_cathode=self.rho0*self.alpha**2)
-        print(rho_start)
-        rho_2d    = np.repeat([rho_start], self.geo.Ny, axis=0).T
-        self.rho = np.repeat(rho_2d[:, :, None], repeats = self.geo.Nz, axis=2)
+        try:
+            rho_param = self.read_input("charge_density_input")
+            self.rho = np.load(rho_param['file'])
+        except KeyError:    
+            """ initialisation of charge density array  """
+            rho_start = self.set_initial_density(val_anode=0, val_cathode=self.rho0*self.alpha**2)
+            rho_2d    = np.repeat([rho_start], self.geo.Ny, axis=0).T
+            self.rho = np.repeat(rho_2d[:, :, None], repeats = self.geo.Nz, axis=2)
+            print(self.rho.shape)
+            #exit()
 
 
 
@@ -97,9 +100,18 @@ class parameters:
         self.Ey = np.zeros((Nx, Ny, Nz), dtype=np.float64)
         self.Ez = np.zeros((Nx, Ny, Nz), dtype=np.float64)
 
-        self.delta_x = np.zeros((Npx, Npy, Npz), dtype=np.float64)
-        self.delta_y = np.zeros((Npx, Npy, Npz), dtype=np.float64)
-        self.delta_z = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+        self.forward_delta_x = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+        self.forward_delta_y = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+        self.forward_delta_z = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+
+        self.backward_delta_x = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+        self.backward_delta_y = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+        self.backward_delta_z = np.zeros((Npx, Npy, Npz), dtype=np.float64)
+
+
+        self.dist_param = self.read_input('distortions')
+        self.backward_max_iter = self.dist_param['max_iter']
+        self.backward_norm_tol = self.dist_param['norm_tol']
         
         lflow = lar_flow.flow(self.read_input('lar_flow'), (Nx, Ny, Nz), self.x_field, self.y_field, self.z_field)
         self.flow_x = lflow.flow_x
@@ -130,7 +142,7 @@ class parameters:
         
         self.set_initial_potential()
         self.set_boundary_conditions_with_ghost(self.phi)
-        
+
 
     def read_input(self, thing):
         with open(self.f_in,'r') as f:
@@ -158,8 +170,12 @@ class parameters:
 
     def set_simulation_quantities(self):
         self.dt = self.simu_param['dt']
-        self.conv = self.simu_param['conv']
+        self.conv_poisson = self.simu_param['conv_poisson']
+        self.conv_simu = self.simu_param['conv_simu']
         self.timesteps = self.simu_param['timesteps']
+        self.static_simulation = self.simu_param['static']
+        if(self.static_simulation == True):
+            print(' !! The simulation will be static in time !!\n')
 
 
 
