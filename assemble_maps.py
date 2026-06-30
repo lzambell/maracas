@@ -173,9 +173,13 @@ class parameters:
         self.flow_y = np.zeros((self.geo.Nx+2, self.geo.Ny+1, self.geo.Nz+1))
         self.flow_z = np.zeros((self.geo.Nx+2, self.geo.Ny+1, self.geo.Nz+1))
 
-        self.delta_x = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
-        self.delta_y = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
-        self.delta_z = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+        self.forward_delta_x = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+        self.forward_delta_y = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+        self.forward_delta_z = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+
+        self.backward_delta_x = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+        self.backward_delta_y = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
+        self.backward_delta_z = np.zeros((self.geo.Nx_path, self.geo.Ny_path, self.geo.Nz_path))
 
         
         maps_a = self.f_a.root.SCE_3D.read()
@@ -206,14 +210,24 @@ class parameters:
         dist_a = self.f_a.root.dist_3D.read()
         dist_b = self.f_b.root.dist_3D.read()
 
-        self.delta_x[0:self.geo.Nx_path_a, :,:] = dist_a['delta_x'][0]
-        self.delta_x[self.geo.Nx_path_a:, :,:]  = dist_b['delta_x'][0]
+        self.forward_delta_x[0:self.geo.Nx_path_a, :,:] = dist_a['forward_delta_x'][0]
+        self.forward_delta_x[self.geo.Nx_path_a:, :,:]  = dist_b['forward_delta_x'][0]
 
-        self.delta_y[0:self.geo.Nx_path_a, :,:] = dist_a['delta_y'][0]
-        self.delta_y[self.geo.Nx_path_a:, :,:]  = dist_b['delta_y'][0]
+        self.forward_delta_y[0:self.geo.Nx_path_a, :,:] = dist_a['forward_delta_y'][0]
+        self.forward_delta_y[self.geo.Nx_path_a:, :,:]  = dist_b['forward_delta_y'][0]
 
-        self.delta_z[0:self.geo.Nx_path_a, :,:] = dist_a['delta_z'][0]
-        self.delta_z[self.geo.Nx_path_a:, :,:]  = dist_b['delta_z'][0]
+        self.forward_delta_z[0:self.geo.Nx_path_a, :,:] = dist_a['forward_delta_z'][0]
+        self.forward_delta_z[self.geo.Nx_path_a:, :,:]  = dist_b['forward_delta_z'][0]
+
+        
+        self.backward_delta_x[0:self.geo.Nx_path_a, :,:] = dist_a['backward_delta_x'][0]
+        self.backward_delta_x[self.geo.Nx_path_a:, :,:]  = dist_b['backward_delta_x'][0]
+
+        self.backward_delta_y[0:self.geo.Nx_path_a, :,:] = dist_a['backward_delta_y'][0]
+        self.backward_delta_y[self.geo.Nx_path_a:, :,:]  = dist_b['backward_delta_y'][0]
+
+        self.backward_delta_z[0:self.geo.Nx_path_a, :,:] = dist_a['backward_delta_z'][0]
+        self.backward_delta_z[self.geo.Nx_path_a:, :,:]  = dist_b['backward_delta_z'][0]
 
         
 parser = argparse.ArgumentParser()
