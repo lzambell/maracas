@@ -50,6 +50,11 @@ class geometry:
         if(self.dim > 2):
             self.Nz = int(np.floor(self.Lz / self.dz + 1e-9))
             assert self.dx == self.dz, ("binning should be the same in x, y and z (3D case)")
+
+        print('cross check ', self.Lx, " vs ", self.dx * self.Nx)
+        print('cross check ', self.Ly, " vs ", self.dy * self.Ny)
+        print('cross check ', self.Lz, " vs ", self.dz * self.Nz)
+        #
             
         print('\n---- General Geometry ----')
         print('Simulation in ',self.dim,' dimensions')
