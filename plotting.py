@@ -36,14 +36,23 @@ class plotter(ABC):
 
 
     
-    def show_convergence(self, conv):
+    def show_convergence(self, res, conv, dt, out=""):
         fig = plt.figure(figsize=(10,4))
-        ax = fig.add_subplot(111)
-        ax.plot(conv)
-        ax.set_yscale('log')
-        ax.set_xlabel('iteration')
-        ax.set_ylabel('convergence')
+        ax_poisson = fig.add_subplot(121)
+        ax_poisson.plot(res)
+        ax_poisson.set_yscale('log')
+        ax_poisson.set_xlabel('iteration')
+        ax_poisson.set_ylabel('Poisson convergence')
+        ax_simu = fig.add_subplot(122)
+        time_ = np.linspace(0, dt*len(conv), len(conv))
+        ax_simu.plot(time_, conv)
+        ax_simu.set_yscale('log')
+        ax_simu.set_xlabel('simulation time (s)')
+        ax_simu.set_ylabel('Simulation convergence')
+        
         fig.tight_layout()
+        if(len(out)>1):
+            fig.savefig('results/'+out+'.png', dpi=200)
         plt.show()
     
     def show_time_performance(self, t_transport, t_poisson, t_field):
@@ -66,13 +75,24 @@ class plotter(ABC):
 
 
 
+    def show_inversemap_performance(self, niter, res):
+        
+        fig = plt.figure(figsize=(10,4))
+        ax_i = fig.add_subplot(121)
+        ax_i.hist(niter, bins = 30, range = [0, 30], histtype='stepfilled', fc='None', edgecolor='k')
+        ax_i.set_xlabel('Nb of iterations')
+        ax_t = fig.add_subplot(122)
+        ax_t.hist(res, bins = 200, range = [0, 1.], histtype='stepfilled', fc='None', edgecolor='k')
+        ax_t.set_xlabel('residual')        
+        plt.show()
+
 
 
 
 class plotter_2D(plotter):
     def __init__(self, param, out):
         self.dir = param.geo.drift_dir
-        self.out = out
+        self.out = '2D/plots/'+out
         
 
     def plot_2D(self, ax, X, min_max, xx, yy, cmap):
@@ -413,8 +433,8 @@ class plotter_2D(plotter):
         ax_y = fig.add_subplot(133)
 
 
-        dx = -1.*param.delta_x[:,:,0]
-        dy = -1.*param.delta_y[:,:,0]
+        dx = -1.*param.forward_delta_x[:,:,0]
+        dy = -1.*param.forward_delta_y[:,:,0]
 
         
         stepx, stepy = 20,20
@@ -438,14 +458,14 @@ class plotter_2D(plotter):
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
         im_x = self.plot_2D(ax_x,
-                            param.delta_x[:,:,0]*1e2,
+                            param.forward_delta_x[:,:,0]*1e2,
                             min_max = [-15, 15],                          
                             xx = [param.geo.xmin, param.geo.xmax],
                             yy = [param.geo.ymin, param.geo.ymax],
                             cmap = cc.cm.CET_CBTD1)
 
         im_y = self.plot_2D(ax_y,
-                            param.delta_y[:,:,0]*1e2,
+                            param.forward_delta_y[:,:,0]*1e2,
                             min_max = [-30, 30],                          
                             xx = [param.geo.xmin, param.geo.xmax],
                             yy = [param.geo.ymin, param.geo.ymax],
@@ -473,7 +493,7 @@ class plotter_2D(plotter):
 class plotter_3D(plotter):
     def __init__(self, param, out):
         self.dir = param.geo.drift_dir
-        self.out = out
+        self.out = '3D/plots/'+out
 
 
     
@@ -554,8 +574,8 @@ class plotter_3D(plotter):
         vy = param.mu * param.Ey + param.flow_y
         vz = param.mu * param.Ez + param.flow_z
 
-        vy *= 5
-        vz *= 5
+        #vy *= 5
+        #vz *= 5
         if(param.geo.drift_forward):
             Ex = (param.Ex - param.E0)/param.E0
         else:
@@ -1004,7 +1024,7 @@ class plotter_3D(plotter):
         bin_zmid = int((param.geo.Nz+1)/2)
         print('mid bins x ', bin_xmid, 'y', bin_ymid, 'z', bin_zmid)
         
-        for i, delta, name in zip([0, 1, 2], [param.delta_x, param.delta_y, param.delta_z], ["x","y","z"]):
+        for i, delta, name in zip([0, 1, 2], [param.forward_delta_x, param.forward_delta_y, param.forward_delta_z], ["x","y","z"]):
             #delta *= -1.
             
 
