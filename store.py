@@ -285,8 +285,10 @@ def create_tables_distortions(h5file, param):
         
 def create_tables_distortions_2D(h5file, param):
     desc = {                
-        "delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
-        "delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
+        "forward_delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
+        "forward_delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
+        "backward_delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
+        "backward_delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path)),
         
     }
     dist_2D = type("dist_2D", (IsDescription,), desc)    
@@ -295,9 +297,12 @@ def create_tables_distortions_2D(h5file, param):
 
 def create_tables_distortions_3D(h5file, param):
     desc = {                
-        "delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
-        "delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
-        "delta_z":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),        
+        "forward_delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
+        "forward_delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
+        "forward_delta_z":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),        
+        "backward_delta_x":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
+        "backward_delta_y":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),
+        "backward_delta_z":  Float64Col(shape=(param.geo.Nx_path, param.geo.Ny_path, param.geo.Nz_path)),        
     }
     dist_3D = type("dist_3D", (IsDescription,), desc)    
     table = h5file.create_table("/", 'dist_3D', dist_3D, "dist_3D")
@@ -316,17 +321,23 @@ def store_distortions(h5file, param):
 
 def store_distortions_2D(h5file, param):
     dd = h5file.root.dist_2D.row
-    dd['delta_x'] = param.delta_x[:,:,0]
-    dd['delta_y'] = param.delta_y[:,:,0]
+    dd['forward_delta_x'] = param.forward_delta_x[:,:,0]
+    dd['forward_delta_y'] = param.forward_delta_y[:,:,0]
+    dd['backward_delta_x'] = param.backward_delta_x[:,:,0]
+    dd['backward_delta_y'] = param.backward_delta_y[:,:,0]
 
     
     dd.append()
 
 def store_distortions_3D(h5file, param):
     dd = h5file.root.dist_3D.row
-    dd['delta_x'] = param.delta_x
-    dd['delta_y'] = param.delta_y
-    dd['delta_z'] = param.delta_z
+    dd['forward_delta_x'] = param.forward_delta_x
+    dd['forward_delta_y'] = param.forward_delta_y
+    dd['forward_delta_z'] = param.forward_delta_z
+    
+    dd['backward_delta_x'] = param.backward_delta_x
+    dd['backward_delta_y'] = param.backward_delta_y
+    dd['backward_delta_z'] = param.backward_delta_z
     
     dd.append()
 
