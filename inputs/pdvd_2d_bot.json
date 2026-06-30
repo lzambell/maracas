@@ -1,8 +1,9 @@
 {    
     "simulation":
     {
-	"dt":0.002,//s, //time of one increment
-    	"conv":10, //convergence criteria to stop
+	"dt":2,//s, //time of one increment
+    	"conv_poisson":150, //convergence criteria for solving poisson equation
+	"conv_simu":1e-6, //convergence criteria of the whole simulation
 	"timesteps":800000, //max nb of iteration
     },
 
@@ -70,7 +71,10 @@
 	"dx":0.01,  //distortion maps binning in m
 	"dy":0.01,  //distortion maps binning in m
 	"dz":0,
-	//not yet used
+	"max_iter":30, //max nb of iteration for backward map
+	"norm_tol":0.0001, //stopping norm criteria for backward map
+
+	//not used, but stored in the output
 	"collection_area":[-3.4, -3.366, null, 0, 6.73, null],
     },
 }

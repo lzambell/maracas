@@ -1,9 +1,11 @@
 {    
     "simulation":
     {
-	"dt":0.002,//s, //time of one increment
-    	"conv":50, //convergence criteria to stop
+	"dt":2,//s, //time of one increment
+    	"conv_poisson":150, //convergence criteria for solving poisson equation
+	"conv_simu":1e-6, //convergence criteria of the whole simulation
 	"timesteps":800000, //max nb of iteration
+	"static":false, //i.e. transports ions at each step
     },
 
     "physics":{	    		
@@ -22,9 +24,9 @@
     "geometry":{
 	"dimension":3,
 	"direction":"horizontal", //for the plots
-	"dx":0.05, //voxel size in m
-	"dy":0.05, 
-	"dz":0.05,
+	"dx":0.0508, //voxel size in m
+	"dy":0.0508, 
+	"dz":0.0508,
 
 	//box definition  3D corner coordinates + 3D lengthes
 	//(X, Y, Z, DX, DY, DZ)
@@ -32,30 +34,27 @@
 
 	//simulation volume
 	"volume":{
-	    "box":[-3.5, 0, 0, 3.5, 6.0, 6.8],
+	    "box":[-3.6068, 0, 0, 3.6068, 6.0452, 7.0612],
 	},
 
 	
 	"field_cage":{
-	    "box":[-3.5, 0, 0, 3.5, 6.0, 6.8],
+	    "box":[-3.6068, 0, 0, 3.6068, 6.0452, 7.0612],
 	    "gradient":[0,-180000],
 	},
 
 
 	//plane definition as for the box: 3D corner coordinates + 3D lengthes
 	//(x0, y0, z0, dx, dy, dz)
-	//--> missing coordinate are null
-	//NB: can set multiple anode planes !
-	//FIY: anode/cathode planes can be smaller than the field cage box !
 	
 	"anode_plane":{
-	    "plane":[[-3.5, 0, 0, 0, 6, 6.8]],
-	    "potential":[0], //in kV
+	    "plane":[[-3.6068, 0, 0, 0, 6.0452, 7.0612]],
+	    "potential":[0], //in V
 
 	},
 	
 	"cathode_plane":{
-	    "plane":[[0, 0, 0, 0, 6, 6.8]],
+	    "plane":[[0, 0, 0, 0, 6.0452, 7.0612]],
 	    "potential":[-180000], //in V
 	},	
 		
@@ -64,10 +63,15 @@
     "distortions":{
 	//all units in m
 	"ds":0.001, //step size for electron path
-	"dx":0.05,  //distortion maps binning in m
-	"dy":0.05,  //distortion maps binning in m
-	"dz":0.05,  //distortion maps binning in m
-	"collection_area":[-3.5, 0.085, 0.085, 3.5, 5.83, 6.63],
+	"dx":0.0508,  //distortion maps binning in m
+	"dy":0.0508,  //distortion maps binning in m
+	"dz":0.0508,  //distortion maps binning in m
+	"max_iter":30, //max nb of iteration for backward map
+	"norm_tol":0.0001, //stopping norm criteria for backward map
+
+	//collection area box as (x0, y0, z0, Dx, Dy, Dz)
+	//not used in the distortion computation (but stored in the output file if one uses it in analysis afterwards)
+	"collection_area":[-3.6068, 0.0527, 0.0527, 3.6068, 5.9925, 7.0085],
 	},
 }
  

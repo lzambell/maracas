@@ -1,8 +1,9 @@
 {    
     "simulation":
     {
-	"dt":0.002,//s, //time of one increment
-    	"conv":10, //convergence criteria to stop
+	"dt":2,//s, //time of one increment
+    	"conv_poisson":150, //convergence criteria for solving poisson equation
+	"conv_simu":1e-6, //convergence criteria of the whole simulation
 	"timesteps":800000, //max nb of iteration
     },
 

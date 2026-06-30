@@ -1,9 +1,11 @@
 {    
     "simulation":
     {
-	"dt":0.002,//s, //time of one increment
-    	"conv":50, //convergence criteria to stop
+	"dt":2,//s, //time of one increment
+    	"conv_poisson":150, //convergence criteria for solving poisson equation
+	"conv_simu":1e-6, //convergence criteria of the whole simulation
 	"timesteps":800000, //max nb of iteration
+	"static":false, //i.e. transports ions at each step
     },
 
     "physics":{	    		
@@ -28,7 +30,7 @@
 
 	//box definition  3D corner coordinates + 3D lengthes
 	//(X, Y, Z, DX, DY, DZ)
-	//-> set irrelevant coordinates to null
+
 
 	//simulation volume
 	"volume":{
@@ -44,13 +46,10 @@
 
 	//plane definition as for the box: 3D corner coordinates + 3D lengthes
 	//(x0, y0, z0, dx, dy, dz)
-	//--> missing coordinate are null
-	//NB: can set multiple anode planes !
-	//FIY: anode/cathode planes can be smaller than the field cage box !
 	
 	"anode_plane":{
 	    "plane":[[-3.4, -3.525, -0.16, 0.0, 7.05, 3.32]],
-	    "potential":[-1500], //in kV
+	    "potential":[-1500], //in V
 
 	},
 	
@@ -67,6 +66,11 @@
 	"dx":0.05,  //distortion maps binning in m
 	"dy":0.05,  //distortion maps binning in m
 	"dz":0.05,  //distortion maps binning in m
+	"max_iter":30, //max nb of iteration for backward map
+	"norm_tol":0.0001, //stopping norm criteria for backward map
+
+	//collection area box as (x0, y0, z0, Dx, Dy, Dz)
+	//not used in the distortion computation (but stored in the output file if one uses it in analysis afterwards)
 	"collection_area":[-3.4, -3.365, 0.0, 3.4, 6.73, 3.0],
 	},
 }
