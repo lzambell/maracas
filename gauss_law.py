@@ -190,10 +190,27 @@ def poisson_solve(param):
 
     # convergence metric
     res = poisson_residual(phi_new, rho_node, dx, eps, dim)
+    residuals = [res]
+    ipoisson = 1
+    while(res > param.conv_poisson):
+        
+        phi_old = phi_new.copy()
+        #phi_new = phi_old.copy()
+        
+        jacobi_step(phi_new, phi_old, rho_node, dx, eps, dim)
 
+        #set Dirichlet BC on new phi 
+        param.set_boundary_conditions_with_ghost(phi_new)
 
+        # convergence metric
+        res = poisson_residual(phi_new, rho_node, dx, eps, dim)
+        residuals.append(res)
+        if(ipoisson%500 == 0):
+            print('   poisson solving iteration ', ipoisson, ' res=', res)
+        ipoisson += 1
+    
     param.phi = phi_new
-    return res
+    return residuals, ipoisson
 
 
 
