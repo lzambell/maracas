@@ -33,8 +33,11 @@ class flow:
     def make_contant_flow(self, vel):
 
         self.flow_x += vel[0]
-        self.flow_y += vel[1]
-        self.flow_z += vel[2]
+        
+        if(self.Ny > 1):
+            self.flow_y += vel[1]
+        if(self.Nz > 2):
+            self.flow_z += vel[2]
 
     def make_vortex_flow(self, p):
 
