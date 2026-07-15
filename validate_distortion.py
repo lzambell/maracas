@@ -8,7 +8,7 @@ def validate_maps(param, frac=0.02):
 
     
     n_tot = param.geo.Nx_path*param.geo.Ny_path*param.geo.Nz_path
-    ntest = int(n_tot*frac)
+    ntest = max(300, int(n_tot*frac))
 
     x = np.linspace(param.geo.xmin+param.geo.dx/2, param.geo.xmax-param.geo.dx/2, param.geo.Nx_path)
     y = np.linspace(param.geo.ymin+param.geo.dy/2, param.geo.ymax-param.geo.dy/2, param.geo.Ny_path)
@@ -36,7 +36,7 @@ def validate_maps(param, frac=0.02):
     residuals = []
 
 
-    print('TEST: ')
+    print('---\nONE POINT TEST: ')
     p_true = np.array([
         rng.uniform(param.geo.xmin, param.geo.xmax),
         rng.uniform(param.geo.ymin, param.geo.ymax),
@@ -44,17 +44,16 @@ def validate_maps(param, frac=0.02):
     ])
 
     print('TRUE at ', p_true)
-
     p_reco = p_true - fwd_interp(p_true)[0]
     print('RECO at ', p_reco)
 
     p_true_recov = p_reco - bkd_interp(p_reco)[0]
     print('BACK TO TRUE ', p_true_recov)
-    print('--> ', p_true_recov - p_true)
+    print('--> delta: ', p_true_recov - p_true)
 
     d = p_true_recov - p_true
     norm = np.linalg.norm(d)
-    print('norm == ', norm)
+    print('norm == ', norm, '\n---')
 
     
     for _ in range(ntest):
@@ -73,17 +72,17 @@ def validate_maps(param, frac=0.02):
 
     residuals = np.asarray(residuals)
     norms = np.linalg.norm(residuals, axis=1)
-    
-    print(norms.shape)
-    print("\nmean_dx", residuals[:, 0].mean(),
-          "\nmean_dy", residuals[:, 1].mean(),
-          "\nmean_dz", residuals[:, 2].mean(),
-          "\nstd_dx", residuals[:, 0].std(),
-          "\nstd_dy", residuals[:, 1].std(),
-          "\nstd_dz", residuals[:, 2].std(),
-          "\nmean_norm", norms.mean(),
-          "\nmax_norm", norms.max(),
-          "\nrms_norm", np.sqrt(np.mean(norms**2)))
+    print('****')
+    print('Validation Results')
+    print("mean residual along x", residuals[:, 0].mean(),
+          "\nmean residual along y", residuals[:, 1].mean(),
+          "\nmean residual along z", residuals[:, 2].mean(),
+          "\nstd residual along x", residuals[:, 0].std(),
+          "\nstd residual along y", residuals[:, 1].std(),
+          "\nstd residual along z", residuals[:, 2].std(),
+          "\nmean norm", norms.mean(),
+          "\nmax norm", norms.max(),
+          "\nrms norm", np.sqrt(np.mean(norms**2)))
 
     fig=plt.figure()
     ax = fig.add_subplot(111)

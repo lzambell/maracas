@@ -205,8 +205,9 @@ def poisson_solve(param):
         # convergence metric
         res = poisson_residual(phi_new, rho_node, dx, eps, dim)
         residuals.append(res)
-        if(ipoisson%500 == 0):
-            print('   poisson solving iteration ', ipoisson, ' res=', res)
+
+        #if(ipoisson%500 == 0):
+        #    print('   poisson solving iteration ', ipoisson, ' res=', res)
         ipoisson += 1
     
     param.phi = phi_new

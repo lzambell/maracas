@@ -10,6 +10,7 @@ import transportation as trans
 import gauss_law as gaus
 import compute_distortions as dist
 import compute_backward_distortions as back
+import validate_distortion as val
 import plotting as plot
 import store as store
 
@@ -39,7 +40,7 @@ else:
 plot = plotting(param, args.out)
 
 
-#plot.show_LAr_flow(param)
+plot.show_LAr_flow(param)
 
 
 #create output file (hdf5)
@@ -71,22 +72,21 @@ for t in range(param.timesteps):
 
     if(t%100==0):
         print("simulation at step", t)
-        print("   poisson solving converged in ", niter, " res= ", residual[-1])
-        print("   simu convergence is : ", conv)
+        print(f"   poisson solving converged in {niter} poisson residuals from {residual[0]:.3f} to {residual[-1]:.3f}")
+        print(f"   simu convergence is : {conv:.3f}")
     
     
     conv_simu.append(conv)
                
     if(conv <= param.conv_simu):
         #simulation finished !
-        print('\n!! simulation converged !!')            
+        print('\n!! simulation converged !!\n')            
 
         plot.show_evolution(param, iteration=t)
         plot.show_Etot(param, iteration=t)                    
         break
         
 store.store_SCE(fout, t, param)
-#plot.show_time_performance(t_transport, t_poisson, t_field)
 plot.show_convergence(res_poisson, conv_simu, param.dt, "convergence")
 
 
@@ -101,7 +101,7 @@ traj = dist.compute_forward_distortions(param)
 plot.show_distortions(param)
 plot.show_trajectories(traj, param)
 
-print('<<<--- Backward <<<---\n')
+print('\n<<<--- Backward <<<---\n')
 niter, res = back.compute_backward_distortions(param)
 plot.show_inversemap_performance(niter, res)
 
@@ -110,7 +110,8 @@ store.create_tables_distortions(fout, param)
 store.store_distortions(fout, param)
 
 
-import validate_distortion as val
+
+print('\n------ Closure Test ------\n')
 val.validate_maps(param, frac=0.01)
 
 fout.close()
