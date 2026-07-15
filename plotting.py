@@ -83,11 +83,81 @@ class plotter(ABC):
         ax_i.set_xlabel('Nb of iterations')
         ax_t = fig.add_subplot(122)
         ax_t.hist(res, bins = 200, range = [0, 1.], histtype='stepfilled', fc='None', edgecolor='k')
-        ax_t.set_xlabel('residual')        
+        ax_t.set_xlabel('residual')
+        fig.tight_layout()
         plt.show()
 
 
 
+class plotter_1D(plotter):
+    def __init__(self, param, out):
+        self.dir = param.geo.drift_dir
+        self.out = '1D/plots/'+out
+
+
+    def show_velocity(self):
+        pass
+
+    def show_LAr_flow(self, param):
+        pass
+    
+
+    def show_evolution(self, param, iteration):
+        
+        fig = plt.figure(figsize=(9,4))
+        ax_rho = fig.add_subplot(121)
+        ax_rho.plot(param.x, param.rho[:,0,0]/param.rho0, c='r')
+
+        ax_rho.set_xlim(param.geo.xmin+param.geo.dx/2, param.geo.xmax-param.geo.dx/2)
+        ax_rho.set_xlabel(r'x [m]')
+
+        ax_rho.set_ylim(0, 1)
+        ax_rho.set_ylabel(r'$\rho/\rho_0$')
+        
+        ax_Ex = fig.add_subplot(122)
+        ax_Ex.plot(param.x_field, param.Ex[:,0,0]/param.E0, c='r')
+
+        
+        ax_Ex.set_xlim(param.geo.xmin_field+param.geo.dx/2, param.geo.xmax_field-param.geo.dx/2)
+        ax_Ex.set_xlabel(r'x [m]')
+
+        if(param.geo.drift_forward):
+            ax_Ex.set_ylim(0.75, 1.25)
+        else:
+            ax_Ex.set_ylim(-1.25, -0.75)
+            
+        ax_Ex.set_ylabel(r'$E_x/E_0$')
+        fig.tight_layout()
+        fig.savefig('results/'+self.out+'_evolution_at_step'+str(iteration)+'.png',dpi=200)
+        plt.show()
+    
+    def show_Etot(self, param, iteration):        
+        pass
+
+    def show_projection_along_x(self):
+        pass
+
+    def show_projection_along_y(self):
+        pass
+
+    def show_projection_along_z(self):
+        pass
+    
+
+    def show_distortions(self, param):
+        fig = plt.figure(figsize=(5,4))
+        ax = fig.add_subplot(111)
+        ax.plot(param.x, param.forward_delta_x[:,0,0], c='k')
+
+        ax.set_xlim(param.geo.xmin+param.geo.dx_path/2, param.geo.xmax-param.geo.dx_path/2)
+
+        ax.set_xlabel(r'x [m]')
+        ax.set_ylabel(r'$\Delta x$ [m]')
+        fig.tight_layout()
+        plt.show()
+
+    def show_trajectories(self, traj, param):
+        pass
 
 class plotter_2D(plotter):
     def __init__(self, param, out):
