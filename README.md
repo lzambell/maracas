@@ -1,5 +1,5 @@
 # MARACAS
-:warning: Work in progress (1D is not ready yet) :warning:
+
 ## Installation
 To run maracas, you'll need `python`, `numpy`, `numba`, `pytables`, `jsonc`, `scipy`, `pytables`, `pyvista`, `matplotlib` and `colorcet`.
 
