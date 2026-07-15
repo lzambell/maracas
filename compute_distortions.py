@@ -42,6 +42,39 @@ def electron_mobility(E, T=89.0):
     return mu   # cm^2/(V·s)
 
 
+@nb.njit(cache=True, fastmath=True)
+def interp_linear(x, Ex, x_grid):
+    """
+    Linear interpolation for Ex on a uniform grid.
+    """
+    Nx = x_grid.size
+
+
+    # Find indices
+    # assumes monotonic grid
+    i = int((x - x_grid[0]) / (x_grid[1] - x_grid[0]))
+
+
+    # Clamp indices
+    if i < 0: i = 0
+    if i > Nx - 2: i = Nx - 2
+
+    # Fractions
+    x1 = x_grid[i]
+    x2 = x_grid[i+1]
+
+
+    tx = (x - x1) / (x2 - x1)
+
+
+    # Linear interpolation
+    Ex_val = (
+        (1 - tx) *  Ex[i] +
+        tx       * Ex[i+1] 
+    )
+
+
+    return float(Ex_val)
 
 
 @nb.njit(cache=True, fastmath=True)
@@ -142,6 +175,91 @@ def interp_trilinear(x, y, z, Ex, Ey, Ez, x_grid, y_grid, z_grid):
 
 
 
+
+@nb.njit(cache=True, fastmath=True)
+def drift_path_1d(x0, 
+                  Ex,  x_grid, 
+                  xmin, xmax, dx,
+                  ds, E0, xanode, is_forward, TLAr):
+    
+    max_steps = 20000
+    E0 *= 1e-2
+    
+    
+    drift_time = 0.0
+    drift_len  = 0.0
+    
+    xs = xmin + x0*dx + dx/2.
+
+    #traj = np.zeros((max_steps))
+    #traj[0] = xs
+
+
+    x = xs
+    step = 0
+
+    while True:
+        
+        if step >= max_steps:
+            print('reached max_steps limit')
+            break
+
+        # interpolate E-field
+        ex = interp_linear(x, Ex, x_grid)
+
+        ex *= 1e-2 #in V/cm
+        
+        # magnitude
+        Etot = np.fabs(ex)
+
+        # velocity
+        mu = electron_mobility(Etot, TLAr)
+        v  = mu * Etot     # cm/sec
+        v *= 1e-2 #m/sec
+        
+        # drift direction
+        ux = 1.*np.sign(ex)
+
+        if is_forward:
+            remaining = x - xanode
+        else:
+            remaining = xanode - x 
+
+        if remaining <= 0:
+            break
+
+        step_size = min(ds, remaining)
+
+        # update time + length
+        drift_time += step_size / v
+        drift_len  += step_size
+
+        # update position (electrons drift opposite direction)
+        x_new = x - step_size * ux
+
+        #traj[step] = x_new
+
+
+        # boundaries
+        if (x_new < xmin) or (x_new > xmax):
+            break
+
+        x = x_new
+        step += 1
+
+    """ here forward refers to the drift direction """
+    if(is_forward):
+        reco_x = xanode + drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
+    else:
+        reco_x = xanode - drift_time * (electron_mobility(E0, TLAr) * E0) * 1e-2
+
+
+
+    #return traj[:step], np.array([xs-reco_x, drift_time, drift_len, reco_x])
+    return np.array([xs-reco_x, drift_time, drift_len])
+
+
+
 @nb.njit(cache=True, fastmath=True)
 def drift_path_2d(x0, y0,
                   Ex, Ey, x_grid, y_grid,
@@ -191,13 +309,25 @@ def drift_path_2d(x0, y0,
         ux = ex / Etot
         uy = ey / Etot
 
+        if is_forward:
+            remaining = x - xanode
+        else:
+            remaining = xanode - x 
+
+        if remaining <= 0:
+            break
+
+        step_size = min(ds, remaining)
+
+
+        
         # update time + length
-        drift_time += ds / v
-        drift_len  += ds
+        drift_time += step_size / v
+        drift_len  += step_size
 
         # update position (electrons drift opposite direction)
-        x_new = x - ds * ux
-        y_new = y - ds * uy
+        x_new = x - step_size * ux
+        y_new = y - step_size * uy
 
 
         traj[step,0] = x_new
@@ -280,14 +410,26 @@ def drift_path_3d(x0, y0, z0,
         uy = ey / Etot
         uz = ez / Etot
 
+        
+        if is_forward:
+            remaining = x - xanode
+        else:
+            remaining = xanode - x 
+
+        if remaining <= 0:
+            break
+
+        step_size = min(ds, remaining)
+
+
         # update time + length
-        drift_time += ds / v
-        drift_len  += ds
+        drift_time += step_size / v
+        drift_len  += step_size
 
         # drift (electrons go opposite field)
-        x_new = x - ds * ux
-        y_new = y - ds * uy
-        z_new = z - ds * uz
+        x_new = x - step_size * ux
+        y_new = y - step_size * uy
+        z_new = z - step_size * uz
 
         traj[step,0] = x_new
         traj[step,1] = y_new
@@ -320,14 +462,71 @@ def drift_path_3d(x0, y0, z0,
 
 def compute_forward_distortions(param):
 
-    if(param.geo.dim == 2):
+    if(param.geo.dim == 1):
+        return compute_forward_distortions_1D(param)
+    
+    elif(param.geo.dim == 2):
         return compute_forward_distortions_2D(param)
 
     elif(param.geo.dim == 3):
         return compute_forward_distortions_3D(param)
+
     else:
         print('oops forward distortions for', param.geo.dim, 'D geometry is not implemented yet!')
+
+
+
         
+def compute_forward_distortions_1D(param):
+    """ get the reconstructed position from true point """
+    start_positions = [ix for ix in range(param.geo.Nx_path)]
+        
+    N = len(start_positions)
+    print('--> ',N, ' points to track')
+    print('anode position: ', param.geo.anode_xpos[0])
+    print(param.geo.anode_xpos)
+
+    
+    trajectories = []
+    t0 = time.time()
+    i = 0
+    for pos in start_positions:
+        
+        #traj,
+        res = drift_path_1d(
+            pos,
+            param.Ex[:,0,0],
+            param.x_field, 
+            param.geo.xmin, param.geo.xmax, param.geo.dx_path,
+            param.geo.ds_path, param.E0, param.geo.anode_xpos[0], param.geo.drift_forward, param.T
+        )
+        
+        param.forward_delta_x[pos, 0, 0] = res[0]
+
+
+
+
+        #if(pos[0] == 0 or pos[0] == param.geo.Nx_path-1 or pos[1] == 0 or pos[1] == param.geo.Ny_path-1):
+        #trajectories.append(traj)
+
+
+        #if(i%10==0):
+        if(i%10==0):
+            xs = param.geo.xmin + pos*param.geo.dx_path + param.geo.dx_path/2. 
+            print("[forward map] ", i, 'at', pos, '<->', xs, " delta= ", res[0])
+            #print('delta : ', res[0])
+            #print('drift time ', res[1])
+            #print('drift length', res[2])
+            ##print('last point ', traj[-1])
+            ##print('nsteps ', len(traj))
+            
+        i+=1
+    print(f'It took {time.time()-t0:.3f} s to compute the distortions')
+
+    return trajectories[::7]
+
+
+
 def compute_forward_distortions_2D(param):
     """ get the reconstructed position from true point """
     start_positions = [[ix,iy] for iy in range(param.geo.Ny_path) for ix in range(param.geo.Nx_path)]
@@ -359,15 +558,17 @@ def compute_forward_distortions_2D(param):
 
 
         if(i%10000==0):
-            print(i, 'at',pos)
             xs = param.geo.xmin + pos[0]*param.geo.dx_path + param.geo.dx_path/2. 
             ys = param.geo.ymin + pos[1]*param.geo.dy_path + param.geo.dy_path/2. 
-            print('corresponding to ', xs, ys)
-            print('last point ', traj[-1][0], traj[-1][1])
-            print('delta : ', res[0], res[1])
-            print('drift time ', res[2])
-            print('drift length', res[3])
-            print('nstep: ', len(traj))
+            
+            print("[forward map] ", i, 'at', pos, f'<->({xs:.3f}, {ys:.3f}) delta:{res[0]:.3f}, {res[1]:.3f}')
+            #print(i, 'at',pos)
+            #print('corresponding to ', xs, ys)
+            #print('last point ', traj[-1][0], traj[-1][1])
+            #print('delta : ', res[0], res[1])
+            #print('drift time ', res[2])
+            #print('drift length', res[3])
+            #print('nstep: ', len(traj))
 
         i+=1
     print(f'It took {time.time()-t0:.3f} s to compute the distortions')
@@ -418,18 +619,20 @@ def compute_forward_distortions_3D(param):
 
 
         if(i%50000==0):
-            print(i, 'at',pos)
+            
             xs = param.geo.xmin + pos[0]*param.geo.dx_path + param.geo.dx_path/2. 
             ys = param.geo.ymin + pos[1]*param.geo.dy_path + param.geo.dy_path/2. 
-            zs = param.geo.zmin + pos[2]*param.geo.dz_path + param.geo.dz_path/2. 
-            print('path from ', xs, ys, zs, ' to ', traj[-1][0], traj[-1][1], traj[-1][2])
-            print('delta : ', res[0], res[1], res[2])
-            print('drift time ', res[2])
-            print('drift length', res[3])
-            print('nstep: ', len(traj))
+            zs = param.geo.zmin + pos[2]*param.geo.dz_path + param.geo.dz_path/2.
+            print("[forward map] ", i, 'at', pos, f'<->({xs:.3f}, {ys:.3f}, {zs:.3f})\n    delta:{res[0]:.3f}, {res[1]:.3f}, {res[2]:.3f}')
+            #print(i, 'at',pos)
+            #print('path from ', xs, ys, zs, ' to ', traj[-1][0], traj[-1][1], traj[-1][2])
+            #print('delta : ', res[0], res[1], res[2])
+            #print('drift time ', res[2])
+            #print('drift length', res[3])
+            #print('nstep: ', len(traj))
 
         i+=1
-    print(f'It took {time.time()-t0:.3f} s to compute the distortions')
+    print(f'It took {time.time()-t0:.3f} s to compute the forward distortions')
 
     Vcoll = (param.geo.coll_xmax-param.geo.coll_xmin)*(param.geo.coll_ymax-param.geo.coll_ymin)*(param.geo.coll_ymax-param.geo.coll_ymin)
     Vtot =  (param.geo.xmax-param.geo.xmin)*(param.geo.ymax-param.geo.ymin)*(param.geo.ymax-param.geo.ymin)

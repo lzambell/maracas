@@ -5,8 +5,10 @@ import tables as tab
 from scipy.interpolate import RegularGridInterpolator
 
 def compute_backward_distortions(param):
+    if(param.geo.dim == 1):
+        return compute_backward_distortions_1D(param)
 
-    if(param.geo.dim == 2):
+    elif(param.geo.dim == 2):
         return compute_backward_distortions_2D(param)
 
     elif(param.geo.dim == 3):
@@ -15,6 +17,83 @@ def compute_backward_distortions(param):
         print('oops backward distortions for', param.geo.dim, 'D geometry is not implemented yet!')
 
 
+
+def compute_backward_distortions_1D(param):
+    
+    x = np.linspace(param.geo.xmin+param.geo.dx/2, param.geo.xmax-param.geo.dx/2, param.geo.Nx_path)
+
+
+
+    fwd_interp = RegularGridInterpolator(
+        (x, ),
+        param.forward_delta_x[:,0,0],
+        bounds_error=False,
+        fill_value=None
+    )
+
+    n_converged = 0
+    n_iter = []
+    residual = []
+    
+    n_tot = param.geo.Nx_path
+    
+    t0 = time.time()
+    for i, xr in enumerate(x):        
+        
+        
+        # reconstructed position
+        x_reco = xr
+
+        # initial guess
+        if i == 0:
+            x_true = x_reco
+        else:
+            x_true = x_true_prev
+
+        converged = False
+        last_step = np.inf
+
+        for it in range(param.backward_max_iter):
+
+            # forward distortion evaluated at current estimate
+            d = fwd_interp([x_true])[0]
+
+            # fixed-point update
+            x_new = x_reco + d
+
+            last_step = abs(x_new - x_true)
+
+            x_true = x_new
+
+            if last_step < param.backward_norm_tol:
+                converged = True
+                n_converged += 1
+                break
+
+        x_true_prev = x_true
+
+        d = fwd_interp([x_true])[0]
+
+        res = np.linalg.norm(x_true - d - x_reco)
+
+        # backward distortion
+        param.backward_delta_x[i] = x_reco - x_true
+
+        if(i%10==0):
+            print(f"[inverse map] x-slice {i+1}/{len(x)} (at x_reco = {xr:.4f}) --> d=", x_reco - x_true, " res=", res)
+
+        n_iter.append(it)
+        residual.append(res)
+
+
+    print(f'Backward computation took {time.time()-t0:.3f}s')
+    print(f'Nb of converged: {n_converged} / {n_tot} = {100.*n_converged/n_tot:.3f}%')
+
+    return n_iter, residual
+
+
+
+        
 def compute_backward_distortions_2D(param):
     
     x = np.linspace(param.geo.xmin+param.geo.dx/2, param.geo.xmax-param.geo.dx/2, param.geo.Nx_path)
@@ -58,7 +137,7 @@ def compute_backward_distortions_2D(param):
                 p_eval = p
                 d = fwd_interp(p_eval)[0]
 
-                p_new = p_reco - d
+                p_new = p_reco + d
                 
                 
                 last_step_norm = np.linalg.norm(p_new - p)
@@ -80,12 +159,12 @@ def compute_backward_distortions_2D(param):
             n_iter.append(it)
             residual.append(last_step_norm)
                 
-        print(f' .... took {time.time()-t1:.3f}s')
+        #print(f' .... took {time.time()-t1:.3f}s')
 
-    print(' --- DONE ---')
-    print(f'took {time.time()-t0:.3f}s')
-    print(f'Nb of converged: {n_converged} / {n_tot} = {100.*n_converged/n_tot:.3f}')
+    print(f'Backward computation took {time.time()-t0:.3f}s')
+    print(f'Nb of converged: {n_converged} / {n_tot} = {100.*n_converged/n_tot:.3f}%')
 
+    
     return n_iter, residual
 
 
@@ -174,11 +253,11 @@ def compute_backward_distortions_3D(param):
                 n_iter.append(it)
                 residual.append(res)
                 
-        print(f' .... took {time.time()-t1:.3f}s')
+        #print(f' .... took {time.time()-t1:.3f}s')
 
-    print(' --- DONE ---')
-    print(f'took {time.time()-t0:.3f}s')
-    print(f'Nb of converged: {n_converged} / {n_tot} = {100.*n_converged/n_tot:.3f}')
+    
+    print(f'Backward computation took {time.time()-t0:.3f}s')
+    print(f'Nb of converged: {n_converged} / {n_tot} = {100.*n_converged/n_tot:.3f}%')
 
     print('residuals stat: ')
     residual = np.asarray(residual)    
