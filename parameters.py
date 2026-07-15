@@ -44,8 +44,7 @@ class parameters:
             rho_start = self.set_initial_density(val_anode=0, val_cathode=self.rho0*self.alpha**2)
             rho_2d    = np.repeat([rho_start], self.geo.Ny, axis=0).T
             self.rho = np.repeat(rho_2d[:, :, None], repeats = self.geo.Nz, axis=2)
-            print(self.rho.shape)
-            #exit()
+            
 
 
 
@@ -60,6 +59,9 @@ class parameters:
             self.x = np.linspace(self.geo.xmin+self.geo.dx/2, self.geo.xmax-self.geo.dx/2, nx)
             self.x_field = np.linspace(self.geo.xmin_field+self.geo.dx/2, self.geo.xmax_field-self.geo.dx/2, nx+1)
             self.x_ghost = np.linspace(self.geo.xmin_ghost+self.geo.dx/2, self.geo.xmax_ghost-self.geo.dx/2, nx+3)
+
+            self.y_field = []
+            self.z_field = []
             
         elif(self.geo.dim == 2):
 
@@ -135,8 +137,8 @@ class parameters:
         self.boundary_conditions['field_cage'] = self.extract_FC_BC()
         self.boundary_conditions['anode'] = self.extract_plane_BC("anode")
         self.boundary_conditions['cathode'] = self.extract_plane_BC("cathode")
-        print('BC are: ')
-        print(self.boundary_conditions)
+        #print('BC are: ')
+        #print(self.boundary_conditions)
 
 
         
@@ -288,17 +290,17 @@ class parameters:
         for plane, bc in self.geo.boundaries.items():
             if('anode' in plane):
                 plane_value = val_anode
-                print("at anode: ", plane_value)
+                #print("at anode: ", plane_value)
             elif('cathode' in plane):
                 plane_value = val_cathode
-                print("at cathode: ", plane_value)
+                #print("at cathode: ", plane_value)
             else:
                 continue
             
             for name, val in bc.items():
                 if(name == "x"):
                     x0, x1 = val
-                    print('->', x0, x1)                    
+                    #print('->', x0, x1)                    
                 else:
                     continue
 
@@ -321,7 +323,16 @@ class parameters:
     def set_boundary_conditions_with_ghost(self, X):
         
         if(self.geo.dim == 1):
-            pass
+             x0, x1, _, _, _, _ = self.boundary_conditions['field_cage']['index']
+             if(self.geo.drift_forward):
+                 X[ 0, :, :]   = 2*self.boundary_conditions['anode']['potential'] - X[ 2, :, :]
+                 X[-1, :, :]   = 2*self.boundary_conditions['cathode']['potential']- X[-3, :, :]
+             else:
+                 X[ 0, :, :]   = 2*self.boundary_conditions['cathode']['potential'] - X[ 2, :, :]
+                 X[-1, :, :]   = 2*self.boundary_conditions['anode']['potential']- X[-3, :, :]
+
+
+             
         elif(self.geo.dim == 2):            
             x0, x1, y0, y1, _,_ = self.boundary_conditions['field_cage']['index']
             
