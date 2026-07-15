@@ -191,6 +191,9 @@ class parameters:
         self.Ex[0:self.geo.Nx_a+1, :,:] = maps_a['Ex'][0]
         self.Ex[self.geo.Nx_a+1:, :,:]  = maps_b['Ex'][0]
 
+
+        #print(self.Ex[:,10,10])
+        
         self.Ey[0:self.geo.Nx_a+1, :,:] = maps_a['Ey'][0]
         self.Ey[self.geo.Nx_a+1:, :,:]  = maps_b['Ey'][0]
 
